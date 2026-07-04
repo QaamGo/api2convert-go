@@ -32,49 +32,48 @@ import (
 )
 
 func main() {
-	ctx := context.Background()
-
-	// The API key falls back to the API2CONVERT_API_KEY environment variable when "".
+	// The API key falls back to the API2CONVERT_API_KEY env var when "".
 	client, err := api2convert.New("YOUR_API_KEY")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// 1) From a local file.
-	res, err := client.Convert(ctx, "photo.png", "jpg")
+	res, err := client.Convert(context.Background(), "photo.png", "jpg")
 	if err != nil {
 		log.Fatal(err)
 	}
-	if _, err := res.Save(ctx, "photo.jpg"); err != nil {
+	if _, err := res.Save(context.Background(), "photo.jpg"); err != nil {
 		log.Fatal(err)
 	}
-
-	// 2) From a URL.
-	res, _ = client.Convert(ctx, "https://example.com/photo.png", "jpg")
-	_, _ = res.Save(ctx, "photo.jpg")
-
-	// 3) With conversion options (save into a directory keeps the API filename).
-	res, _ = client.Convert(ctx, "photo.png", "jpg",
-		api2convert.WithConversionOptions(map[string]any{"quality": 85, "width": 1280, "height": 720}),
-	)
-	_, _ = res.Save(ctx, "out/")
-
-	// 4) Password-protected result (remembered and applied automatically on download).
-	res, _ = client.Convert(ctx, "statement.docx", "pdf",
-		api2convert.WithDownloadPassword("hunter2"),
-	)
-	_, _ = res.Save(ctx, "statement.pdf")
-
-	// 5) Async with a webhook callback.
-	job, _ := client.ConvertAsync(ctx, "movie.mov", "mp4",
-		api2convert.WithCallback("https://your-app.example.com/webhooks/api2convert"),
-	)
-	log.Printf("started job %s", job.ID)
 }
 ```
 
 `Convert` accepts a local path (`string`), a public URL (`^https?://`), in-memory bytes (`[]byte`),
 or an `io.Reader`.
+
+## More examples
+
+Given a `client` and a `ctx context.Context`, each variation is a single call.
+(Error handling is elided here — check it as in the quick start above.)
+
+```go
+// From a URL (fetched server-side).
+res, err := client.Convert(ctx, "https://example.com/photo.png", "jpg")
+
+// With conversion options (discover them via client.Options); saving into a
+// directory keeps the API's filename.
+res, err = client.Convert(ctx, "photo.png", "jpg",
+	api2convert.WithConversionOptions(map[string]any{"quality": 85, "width": 1280, "height": 720}))
+res.Save(ctx, "out/")
+
+// Password-protected output — remembered and applied automatically on download.
+res, err = client.Convert(ctx, "statement.docx", "pdf",
+	api2convert.WithDownloadPassword("hunter2"))
+
+// Async with a webhook callback (returns once the job is started).
+job, err := client.ConvertAsync(ctx, "movie.mov", "mp4",
+	api2convert.WithCallback("https://your-app.example.com/webhooks/api2convert"))
+```
 
 ## Typed errors
 
