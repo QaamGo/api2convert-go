@@ -1,0 +1,13 @@
+# Test / build output
+*.out
+*.test
+coverage.txt
+coverage.out
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+
+# Local env
+.env

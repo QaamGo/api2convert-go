@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache: true
+      - name: gofmt
+        run: |
+          out="$(gofmt -l .)"
+          if [ -n "$out" ]; then echo "gofmt needed:"; echo "$out"; exit 1; fi
+      - name: go vet
+        run: go vet ./...
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        go: ["1.22", "1.23", "1.24"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go }}
+          cache: true
+      # Offline unit + independent security suites are hermetic (no API key).
+      - name: Unit + security suites
+        run: go test -race ./...
+      - name: Security suite (explicit, in isolation)
+        run: go test -race ./security/...
+
+  live:
+    # Live tests hit the real (production) API and consume quota: only on master or
+    # a manual dispatch, and only when the key secret is present.
+    if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master' }}
+    runs-on: ubuntu-latest
+    continue-on-error: true # allow_failure equivalent
+    env:
+      API2CONVERT_API_KEY: ${{ secrets.API2CONVERT_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache: true
+      - name: Live conformance (skips if no key)
+        if: ${{ env.API2CONVERT_API_KEY != '' }}
+        run: go test -tags live -timeout 300s ./live/...
