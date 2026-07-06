@@ -14,7 +14,7 @@ Java, Node.js, Go) that all implement the same [SDK contract](docs/SDK_CONTRACT.
 ## Install
 
 ```sh
-go get github.com/QaamGo/api2convert-go
+go get github.com/QaamGo/api2convert-go/v10
 ```
 
 Requires Go 1.22+.
@@ -28,7 +28,7 @@ import (
 	"context"
 	"log"
 
-	api2convert "github.com/QaamGo/api2convert-go"
+	api2convert "github.com/QaamGo/api2convert-go/v10"
 )
 
 func main() {

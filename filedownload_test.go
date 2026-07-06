@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	api2convert "github.com/QaamGo/api2convert-go"
-	"github.com/QaamGo/api2convert-go/internal/testutil"
+	api2convert "github.com/QaamGo/api2convert-go/v10"
+	"github.com/QaamGo/api2convert-go/v10/internal/testutil"
 )
 
 func TestSaveUsesAPIFilenameWhenTargetIsDir(t *testing.T) {

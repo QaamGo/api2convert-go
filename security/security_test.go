@@ -27,8 +27,8 @@ import (
 	"testing"
 	"time"
 
-	api2convert "github.com/QaamGo/api2convert-go"
-	"github.com/QaamGo/api2convert-go/internal/testutil"
+	api2convert "github.com/QaamGo/api2convert-go/v10"
+	"github.com/QaamGo/api2convert-go/v10/internal/testutil"
 )
 
 func ctx() context.Context { return context.Background() }

@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	api2convert "github.com/QaamGo/api2convert-go"
+	api2convert "github.com/QaamGo/api2convert-go/v10"
 )
 
 // Sleeper is a recording, instant sleeper: it never actually waits, but records

@@ -22,7 +22,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	api2convert "github.com/QaamGo/api2convert-go"
+	api2convert "github.com/QaamGo/api2convert-go/v10"
 )
 
 const remoteJPG = "https://example-files.online-convert.com/raster%20image/jpg/example_small.jpg"

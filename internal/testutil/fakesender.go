@@ -17,7 +17,7 @@ import (
 	"net/http"
 	"sync"
 
-	api2convert "github.com/QaamGo/api2convert-go"
+	api2convert "github.com/QaamGo/api2convert-go/v10"
 )
 
 // RecordedRequest is a captured outbound request (the Go analog of Node's

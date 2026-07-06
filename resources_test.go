@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/QaamGo/api2convert-go/internal/testutil"
+	"github.com/QaamGo/api2convert-go/v10/internal/testutil"
 )
 
 func TestJobsListUpdateCancelAddInputOutputs(t *testing.T) {

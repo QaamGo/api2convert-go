@@ -9,7 +9,7 @@ import (
 	"log"
 	"os"
 
-	api2convert "github.com/QaamGo/api2convert-go"
+	api2convert "github.com/QaamGo/api2convert-go/v10"
 )
 
 func main() {
