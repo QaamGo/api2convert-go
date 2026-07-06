@@ -59,6 +59,10 @@ func (d *FileDownload) Save(ctx context.Context, pathOrDir string, downloadPassw
 	defer f.Close()
 
 	if _, err := io.Copy(f, d.capReader(resp.Body)); err != nil {
+		// A failed copy must not leave a partial/corrupt file behind. Close it
+		// first so the removal is portable, then delete it best-effort.
+		f.Close()
+		_ = os.Remove(target)
 		var a2c Api2ConvertError
 		if errors.As(err, &a2c) {
 			return "", err

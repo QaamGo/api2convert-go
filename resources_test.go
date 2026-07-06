@@ -142,4 +142,39 @@ func TestStatsAndContracts(t *testing.T) {
 	}
 }
 
+func TestPathSegmentsAreEncoded(t *testing.T) {
+	tc := testutil.NewTestClient()
+	tc.HTTP.
+		AddJSON(200, map[string]any{"id": "j1"}).
+		AddJSON(200, map[string]any{"id": "p1"}).
+		AddJSON(200, map[string]any{"conversions": 1})
+
+	ctx := context.Background()
+	// A raw "/" "?" or "#" in a caller-supplied id must not alter the path or
+	// inject a query/fragment — each segment is percent-encoded.
+	const nasty = "a/b?c#d"
+	const encoded = "a%2Fb%3Fc%23d"
+
+	if _, err := tc.Client.Jobs().Get(ctx, nasty); err != nil {
+		t.Fatal(err)
+	}
+	if url := tc.HTTP.At(0).URL; !contains(url, "/jobs/"+encoded) || contains(url, nasty) {
+		t.Fatalf("Jobs.Get URL = %q, want encoded segment %q", url, encoded)
+	}
+
+	if _, err := tc.Client.Presets().Get(ctx, nasty); err != nil {
+		t.Fatal(err)
+	}
+	if url := tc.HTTP.At(1).URL; !contains(url, "/presets/"+encoded) || contains(url, nasty) {
+		t.Fatalf("Presets.Get URL = %q, want encoded segment %q", url, encoded)
+	}
+
+	if _, err := tc.Client.Stats().Day(ctx, nasty, nasty); err != nil {
+		t.Fatal(err)
+	}
+	if url := tc.HTTP.At(2).URL; !contains(url, "/stats/day/"+encoded+"/"+encoded) || contains(url, nasty) {
+		t.Fatalf("Stats.Day URL = %q, want encoded segments %q", url, encoded)
+	}
+}
+
 func contains(s, sub string) bool { return strings.Contains(s, sub) }

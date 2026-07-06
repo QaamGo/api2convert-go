@@ -33,7 +33,7 @@ func (r *JobsResource) Create(ctx context.Context, payload map[string]any, idemp
 
 // Get fetches a job by id.
 func (r *JobsResource) Get(ctx context.Context, jobID string) (*Job, error) {
-	res, err := r.transport.request(ctx, "GET", "/jobs/"+jobID, nil, nil, nil)
+	res, err := r.transport.request(ctx, "GET", "/jobs/"+seg(jobID), nil, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +60,7 @@ func (r *JobsResource) List(ctx context.Context, status string, page int) ([]Job
 
 // Update patches a job (e.g. {"process": true} to start it).
 func (r *JobsResource) Update(ctx context.Context, jobID string, payload map[string]any) (*Job, error) {
-	res, err := r.transport.request(ctx, "PATCH", "/jobs/"+jobID, payload, nil, nil)
+	res, err := r.transport.request(ctx, "PATCH", "/jobs/"+seg(jobID), payload, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -75,14 +75,14 @@ func (r *JobsResource) Start(ctx context.Context, jobID string) (*Job, error) {
 
 // Cancel cancels a job (whether staged or processing).
 func (r *JobsResource) Cancel(ctx context.Context, jobID string) error {
-	_, err := r.transport.request(ctx, "DELETE", "/jobs/"+jobID, nil, nil, nil)
+	_, err := r.transport.request(ctx, "DELETE", "/jobs/"+seg(jobID), nil, nil, nil)
 	return err
 }
 
 // AddInput attaches an input by descriptor, e.g. a remote URL:
 // AddInput(ctx, jobID, map[string]any{"type": "remote", "source": "https://..."}).
 func (r *JobsResource) AddInput(ctx context.Context, jobID string, descriptor map[string]any) (*InputFile, error) {
-	res, err := r.transport.request(ctx, "POST", "/jobs/"+jobID+"/input", descriptor, nil, nil)
+	res, err := r.transport.request(ctx, "POST", "/jobs/"+seg(jobID)+"/input", descriptor, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +98,7 @@ func (r *JobsResource) Upload(ctx context.Context, job Job, file any, filename .
 
 // Outputs returns the outputs produced by the job (use Get or Wait first).
 func (r *JobsResource) Outputs(ctx context.Context, jobID string) ([]OutputFile, error) {
-	res, err := r.transport.request(ctx, "GET", "/jobs/"+jobID+"/output", nil, nil, nil)
+	res, err := r.transport.request(ctx, "GET", "/jobs/"+seg(jobID)+"/output", nil, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -240,7 +240,7 @@ func (r *PresetsResource) Create(ctx context.Context, payload map[string]any) (*
 
 // Get fetches a preset by id.
 func (r *PresetsResource) Get(ctx context.Context, presetID string) (*Preset, error) {
-	res, err := r.transport.request(ctx, "GET", "/presets/"+presetID, nil, nil, nil)
+	res, err := r.transport.request(ctx, "GET", "/presets/"+seg(presetID), nil, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -250,7 +250,7 @@ func (r *PresetsResource) Get(ctx context.Context, presetID string) (*Preset, er
 
 // Update patches a preset.
 func (r *PresetsResource) Update(ctx context.Context, presetID string, payload map[string]any) (*Preset, error) {
-	res, err := r.transport.request(ctx, "PATCH", "/presets/"+presetID, payload, nil, nil)
+	res, err := r.transport.request(ctx, "PATCH", "/presets/"+seg(presetID), payload, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -260,7 +260,7 @@ func (r *PresetsResource) Update(ctx context.Context, presetID string, payload m
 
 // Delete deletes a preset.
 func (r *PresetsResource) Delete(ctx context.Context, presetID string) error {
-	_, err := r.transport.request(ctx, "DELETE", "/presets/"+presetID, nil, nil, nil)
+	_, err := r.transport.request(ctx, "DELETE", "/presets/"+seg(presetID), nil, nil, nil)
 	return err
 }
 
@@ -272,17 +272,17 @@ type StatsResource struct {
 
 // Day returns usage for a day (format yyyy-mm-dd).
 func (r *StatsResource) Day(ctx context.Context, day, filter string) (any, error) {
-	return r.transport.request(ctx, "GET", "/stats/day/"+day+"/"+statsFilter(filter), nil, nil, nil)
+	return r.transport.request(ctx, "GET", "/stats/day/"+seg(day)+"/"+seg(statsFilter(filter)), nil, nil, nil)
 }
 
 // Month returns usage for a month (format yyyy-mm).
 func (r *StatsResource) Month(ctx context.Context, month, filter string) (any, error) {
-	return r.transport.request(ctx, "GET", "/stats/month/"+month+"/"+statsFilter(filter), nil, nil, nil)
+	return r.transport.request(ctx, "GET", "/stats/month/"+seg(month)+"/"+seg(statsFilter(filter)), nil, nil, nil)
 }
 
 // Year returns usage for a year (format yyyy).
 func (r *StatsResource) Year(ctx context.Context, year, filter string) (any, error) {
-	return r.transport.request(ctx, "GET", "/stats/year/"+year+"/"+statsFilter(filter), nil, nil, nil)
+	return r.transport.request(ctx, "GET", "/stats/year/"+seg(year)+"/"+seg(statsFilter(filter)), nil, nil, nil)
 }
 
 func statsFilter(filter string) string {
@@ -290,6 +290,14 @@ func statsFilter(filter string) string {
 		return "all"
 	}
 	return filter
+}
+
+// seg percent-encodes a caller-supplied value for safe interpolation into a URL
+// path segment. Without this a value containing "/", "?" or "#" would alter the
+// request path or inject a query/fragment. Query parameters are encoded
+// separately via url.Values.Encode.
+func seg(s string) string {
+	return url.PathEscape(s)
 }
 
 // ContractsResource returns information about the account's active contracts

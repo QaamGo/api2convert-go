@@ -134,6 +134,23 @@ func TestDownloadWithPasswordSendsHeaderAndDoesNotFollowRedirects(t *testing.T) 
 	}
 }
 
+func TestSaveRemovesPartialFileOnCopyError(t *testing.T) {
+	dir := t.TempDir()
+	// A tiny download cap makes io.Copy fail partway through streaming the body.
+	tc := testutil.NewTestClient(api2convert.WithMaxDownloadBytes(4))
+	tc.HTTP.AddRaw(200, []byte("way too many bytes to fit under the cap"))
+
+	target := filepath.Join(dir, "out.bin")
+	out := api2convert.OutputFileOf("", "https://dl/x", "ignored")
+	_, err := tc.Client.Download(out).Save(context.Background(), target)
+	if err == nil {
+		t.Fatal("expected an error when the copy fails")
+	}
+	if _, statErr := os.Stat(target); !os.IsNotExist(statErr) {
+		t.Fatalf("a failed download must leave no file at target; os.Stat err = %v", statErr)
+	}
+}
+
 func TestMaxDownloadBytesRejectsOversizedBody(t *testing.T) {
 	tc := testutil.NewTestClient(api2convert.WithMaxDownloadBytes(4))
 	tc.HTTP.AddRaw(200, []byte("way too many bytes"))
