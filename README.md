@@ -174,6 +174,21 @@ API2CONVERT_API_KEY=<your key> make test-live
 API2CONVERT_API_KEY=<key> API2CONVERT_BASE_URL=https://api.api2convert.com/v2 make test-live
 ```
 
+The [live conformance suite](live/conformance_test.go) doubles as an executable, end-to-end tour of
+the SDK — each test is a self-contained usage example:
+
+1. **Convert a remote URL** — the one-call happy path.
+2. **Upload and convert a local file** — the multipart upload path.
+3. **Convert with options** — apply target-specific conversion options.
+4. **Discover the catalog** — list conversions and option schemas.
+5. **Drive the job lifecycle by hand** — create → add input → start → wait → inspect.
+6. **Handle a validation error** — an unknown target is a typed error.
+7. **Handle an authentication error** — a bad key is typed and never leaked.
+
+It runs automatically against the real API on every release tag (see
+`.github/workflows/live-conformance.yml`), so a published version is always verified end to end.
+Runnable single-purpose examples live in [`examples/`](examples/).
+
 ## License
 
 [MIT](LICENSE) © Qaamgo Media GmbH
