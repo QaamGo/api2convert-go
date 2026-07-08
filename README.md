@@ -1,5 +1,10 @@
 # API2Convert Go SDK
 
+[![CI](https://github.com/QaamGo/api2convert-go/actions/workflows/ci.yml/badge.svg)](https://github.com/QaamGo/api2convert-go/actions/workflows/ci.yml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/QaamGo/api2convert-go/v10.svg)](https://pkg.go.dev/github.com/QaamGo/api2convert-go/v10)
+[![Release](https://img.shields.io/github/v/tag/QaamGo/api2convert-go?sort=semver&label=release)](https://github.com/QaamGo/api2convert-go/tags)
+![License](https://img.shields.io/badge/license-MIT-green)
+
 The official Go SDK for the [API2Convert](https://www.api2convert.com) file-conversion API —
 convert, compress and transform files with one call. It is one of the official ports (PHP, Python,
 Java, Node.js, Go) that all implement the same [SDK contract](docs/SDK_CONTRACT.md).
