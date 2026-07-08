@@ -175,19 +175,37 @@ API2CONVERT_API_KEY=<key> API2CONVERT_BASE_URL=https://api.api2convert.com/v2 ma
 ```
 
 The [live conformance suite](live/conformance_test.go) doubles as an executable, end-to-end tour of
-the SDK — each test is a self-contained usage example:
-
-1. **Convert a remote URL** — the one-call happy path.
-2. **Upload and convert a local file** — the multipart upload path.
-3. **Convert with options** — apply target-specific conversion options.
-4. **Discover the catalog** — list conversions and option schemas.
-5. **Drive the job lifecycle by hand** — create → add input → start → wait → inspect.
-6. **Handle a validation error** — an unknown target is a typed error.
-7. **Handle an authentication error** — a bad key is typed and never leaked.
-
-It runs automatically against the real API on every release tag (see
+the SDK: one test per documented guide, plus two negative tests (an unknown target is a typed
+validation/conversion error; a bad key is a typed auth error that never leaks the credential). It
+runs automatically against the real API on every release tag (see
 `.github/workflows/live-conformance.yml`), so a published version is always verified end to end.
-Runnable single-purpose examples live in [`examples/`](examples/).
+
+Each test mirrors a runnable single-purpose program in [`examples/`](examples/). Every example reads
+the key from `API2CONVERT_API_KEY` (and honors `API2CONVERT_BASE_URL`); run one with
+`go run ./examples/<name>`:
+
+| Example | Guide | What it does |
+|---------|-------|--------------|
+| [`quickstart`](examples/quickstart) | Quickstart | Convert a remote JPG → PNG, re-fetch the job, download |
+| [`convert-files`](examples/convert-files) | Convert Files | Browse the conversions catalog (all + filtered), then convert |
+| [`uploading-files`](examples/uploading-files) | Uploading Files | One-call upload + convert of a local file |
+| [`job-lifecycle`](examples/job-lifecycle) | Job Lifecycle | Manual create → add input → start → wait → outputs |
+| [`add-watermark`](examples/add-watermark) | Add a Watermark | Stamp a PDF with an image overlay (two inputs) |
+| [`create-thumbnails`](examples/create-thumbnails) | Create Thumbnails | Render a PDF page to a PNG thumbnail |
+| [`compress-files`](examples/compress-files) | Compress Files | Shrink a JPG with the compress operation |
+| [`create-archives`](examples/create-archives) | Create Archives | Bundle two remote files into a ZIP |
+| [`create-hashes`](examples/create-hashes) | Create Hashes | Compute a SHA-256 digest of a file |
+| [`extract-assets`](examples/extract-assets) | Extract Assets | Pull embedded assets out of a document |
+| [`file-analysis`](examples/file-analysis) | File Analysis | Extract file metadata as JSON |
+| [`compare-files`](examples/compare-files) | Compare Files | Diff two images with the compare-image operation |
+| [`capture-website`](examples/capture-website) | Capture a Website | Screenshot a URL with the screenshot engine |
+| [`audio-operations`](examples/audio-operations) | Audio Operations | Transcode WAV → AAC with explicit options |
+| [`image-operations`](examples/image-operations) | Image Operations | Resize a JPG with the resize-image operation |
+| [`webhooks`](examples/webhooks) | Webhooks | Async convert with a callback + verify the signed callback |
+| [`presets`](examples/presets) | Presets | List saved conversion presets |
+| [`statistics`](examples/statistics) | Statistics | Fetch monthly usage figures |
+| [`rate-limits`](examples/rate-limits) | Rate Limits | Inspect the account's contracts (quota/limits) |
+| [`authentication`](examples/authentication) | Authentication | Prove the key works via an authenticated jobs list |
 
 ## License
 
