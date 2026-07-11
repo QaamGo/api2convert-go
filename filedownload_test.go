@@ -33,7 +33,7 @@ func TestSaveUsesAPIFilenameWhenTargetIsDir(t *testing.T) {
 	if !req.FollowRedirects {
 		t.Fatal("a no-auth download should follow redirects")
 	}
-	if req.H("X-Oc-Api-Key") != "" || req.H("X-Oc-Download-Password") != "" {
+	if req.H("X-Api2convert-Api-Key") != "" || req.H("X-Api2convert-Download-Password") != "" {
 		t.Fatal("a passwordless download must carry no secret header")
 	}
 }
@@ -129,8 +129,8 @@ func TestDownloadWithPasswordSendsHeaderAndDoesNotFollowRedirects(t *testing.T) 
 	if req.FollowRedirects {
 		t.Fatal("a password-protected download must not follow redirects")
 	}
-	if req.H("X-Oc-Download-Password") != "s3cret" {
-		t.Fatalf("download password header = %q", req.H("X-Oc-Download-Password"))
+	if req.H("X-Api2convert-Download-Password") != "s3cret" {
+		t.Fatalf("download password header = %q", req.H("X-Api2convert-Download-Password"))
 	}
 }
 

@@ -43,7 +43,7 @@ func TestAPIKeyFromEnvWhenEmpty(t *testing.T) {
 	if _, err := c.Jobs().Get(context.Background(), "x"); err != nil {
 		t.Fatal(err)
 	}
-	if got := fake.Last().H("X-Oc-Api-Key"); got != "env-key" {
+	if got := fake.Last().H("X-Api2convert-Api-Key"); got != "env-key" {
 		t.Fatalf("auth header = %q, want env-key", got)
 	}
 }

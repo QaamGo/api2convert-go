@@ -13,9 +13,9 @@ _Security_ tab (private vulnerability reporting). If that is unavailable, use th
 The library handles three secrets on the caller's behalf — keep all of them out of source control and
 configure them via environment variables or a secret manager:
 
-- the **account API key** (`X-Oc-Api-Key`) — read from configuration or the `API2CONVERT_API_KEY`
+- the **account API key** (`X-Api2convert-Api-Key`) — read from configuration or the `API2CONVERT_API_KEY`
   environment variable and sent only to the API host, never in a URL query string;
-- the **per-job upload token** (`X-Oc-Token`) — used to authenticate uploads to the per-job upload
+- the **per-job upload token** (`X-Api2convert-Token`) — used to authenticate uploads to the per-job upload
   server; the account key is **never** sent there;
 - the **webhook signing secret** — used locally to verify callback signatures (HMAC-SHA256 over the
   raw request body, constant-time comparison via `crypto/hmac`'s `hmac.Equal`). The signature is
@@ -25,8 +25,8 @@ configure them via environment variables or a secret manager:
 
 - The SDK never logs a key/token and never places one in an error message.
 - **A request that carries any secret in a custom header never follows HTTP redirects.** The account
-  key (`X-Oc-Api-Key`), per-job upload token (`X-Oc-Token`) and download password
-  (`X-Oc-Download-Password`) all ride in custom `X-Oc-*` headers. Go's `http.Client` follows redirects
+  key (`X-Api2convert-Api-Key`), per-job upload token (`X-Api2convert-Token`) and download password
+  (`X-Api2convert-Download-Password`) all ride in custom `X-Api2convert-*` headers. Go's `http.Client` follows redirects
   by default and its redirect handler forwards custom headers across a cross-host redirect (since Go
   1.8 it strips only `Authorization`/`Www-Authenticate`/`Cookie`/`Cookie2` on a domain change), so a
   redirect could otherwise forward the secret to another host. The SDK therefore routes every

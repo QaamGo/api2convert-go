@@ -68,7 +68,7 @@ func TestConversionResultSaveRemembersDownloadPassword(t *testing.T) {
 		t.Fatalf("path = %q, want %q", path, want)
 	}
 	// The password supplied at conversion time is applied automatically on download.
-	if got := tc.HTTP.Last().H("X-Oc-Download-Password"); got != "pw" {
+	if got := tc.HTTP.Last().H("X-Api2convert-Download-Password"); got != "pw" {
 		t.Fatalf("remembered download password not sent: %q", got)
 	}
 	data, _ := os.ReadFile(path)

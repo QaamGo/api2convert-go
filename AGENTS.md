@@ -70,9 +70,9 @@ junior-friendly surface — one-call `Convert()` — and use AI to keep it curre
   release.
 - **The contract is law.** Public method names, signatures and semantics match `docs/SDK_CONTRACT.md`
   across every SDK language, adapted only to Go idiom (see divergences below).
-- **Upload uses the per-job `X-Oc-Token`, never the account key.** There is a test for this.
+- **Upload uses the per-job `X-Api2convert-Token`, never the account key.** There is a test for this.
 - **Secret-bearing requests never follow redirects.** The key/token/download-password ride in custom
-  `X-Oc-*` headers that Go's default client would forward across hosts. Only the no-secret download
+  `X-Api2convert-*` headers that Go's default client would forward across hosts. Only the no-secret download
   path follows redirects (a second `http.Client`). `security/` proves the guarantee with real servers.
 - **`Convert()` stays one call** for the common case (path/URL/reader → `to` → `Save()`).
 - **Transient failures retry; failures surface as typed errors.** Never leak a raw transport error

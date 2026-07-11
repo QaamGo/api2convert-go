@@ -17,7 +17,7 @@ import (
 //
 //   - noRedirect never follows a redirect (CheckRedirect returns
 //     http.ErrUseLastResponse). It is used for every authenticated request. The
-//     account key / per-job token / download password ride in custom X-Oc-*
+//     account key / per-job token / download password ride in custom X-Api2convert-*
 //     headers, and net/http's default redirect handler forwards custom headers
 //     across a cross-host redirect (since Go 1.8 it strips only
 //     Authorization/Www-Authenticate/Cookie/Cookie2 on a domain change), so a

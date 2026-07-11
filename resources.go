@@ -267,7 +267,7 @@ func (r *PresetsResource) Delete(ctx context.Context, presetID string) error {
 // StatsResource returns API usage statistics. The response shape is free-form
 // (returned as-is). filter is "single" (only the calling API key) or "all"
 // (every key on the account, the default); the spec enum is {"single","all"}.
-// The request is scoped by the X-Oc-Api-Key header, so a key is never placed in
+// The request is scoped by the X-Api2convert-Api-Key header, so a key is never placed in
 // the URL — do not pass a key as filter.
 type StatsResource struct {
 	transport *transport

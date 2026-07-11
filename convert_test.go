@@ -30,7 +30,7 @@ func TestConvertFromURLCreatesStartedJobPollsAndReturns(t *testing.T) {
 	}
 
 	create := tc.HTTP.At(0)
-	if create.Method != "POST" || create.H("X-Oc-Api-Key") != "test-key" {
+	if create.Method != "POST" || create.H("X-Api2convert-Api-Key") != "test-key" {
 		t.Fatalf("create request = %+v", create)
 	}
 	if create.FollowRedirects {
@@ -85,10 +85,10 @@ func TestConvertFromLocalPathUploadsThenStarts(t *testing.T) {
 	if upload.Method != "POST" || upload.URL != "https://up.example.com/v2/upload-file/job-1" {
 		t.Fatalf("upload request = %+v", upload)
 	}
-	if upload.H("X-Oc-Token") != "tok-abc" {
-		t.Fatalf("upload must use the job token, got %q", upload.H("X-Oc-Token"))
+	if upload.H("X-Api2convert-Token") != "tok-abc" {
+		t.Fatalf("upload must use the job token, got %q", upload.H("X-Api2convert-Token"))
 	}
-	if upload.H("X-Oc-Api-Key") != "" {
+	if upload.H("X-Api2convert-Api-Key") != "" {
 		t.Fatal("the account key must never reach the upload server")
 	}
 	if upload.FollowRedirects {

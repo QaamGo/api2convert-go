@@ -30,7 +30,7 @@ type Request struct {
 	MakeBody func() (io.Reader, error)
 
 	// FollowRedirects: only a no-secret download opts in. Any request carrying an
-	// X-Oc-* secret header must keep this false so a redirect cannot forward the
+	// X-Api2convert-* secret header must keep this false so a redirect cannot forward the
 	// secret to another host.
 	FollowRedirects bool
 

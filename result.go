@@ -159,10 +159,10 @@ func (d *FileDownload) resolveTarget(pathOrDir string) string {
 
 func (d *FileDownload) headers(downloadPassword []string) map[string]string {
 	if len(downloadPassword) > 0 {
-		return map[string]string{"X-Oc-Download-Password": downloadPassword[0]}
+		return map[string]string{"X-Api2convert-Download-Password": downloadPassword[0]}
 	}
 	if d.downloadPassword != nil {
-		return map[string]string{"X-Oc-Download-Password": *d.downloadPassword}
+		return map[string]string{"X-Api2convert-Download-Password": *d.downloadPassword}
 	}
 	return map[string]string{}
 }

@@ -17,7 +17,7 @@ import (
 //
 // This step is intentionally hand-written — it is NOT described by the OpenAPI
 // spec. It posts a multipart/form-data body (field "file") to
-// {job.Server}/upload-file/{job.ID} and authenticates with the per-job X-Oc-Token
+// {job.Server}/upload-file/{job.ID} and authenticates with the per-job X-Api2convert-Token
 // header — never the account API key. Bodies are streamed, so large files are not
 // read into memory.
 type fileUploader struct {
@@ -36,7 +36,7 @@ func (u *fileUploader) upload(ctx context.Context, job Job, file any, filename .
 	}
 
 	headers := map[string]string{
-		"X-Oc-Token":   job.Token,
+		"X-Api2convert-Token":   job.Token,
 		"Content-Type": contentType,
 	}
 	req := &Request{

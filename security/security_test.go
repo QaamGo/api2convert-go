@@ -7,7 +7,7 @@
 // It is a black-box package (it imports the SDK by its module path), so every
 // guarantee is proven through the public API only. The redirect guarantees use
 // REAL loopback HTTP servers (net/http/httptest): only a genuine cross-host 302
-// can demonstrate that the transport does not forward an X-Oc-* secret header to
+// can demonstrate that the transport does not forward an X-Api2convert-* secret header to
 // the redirect target. Go's http.Client default redirect handler forwards custom
 // headers across a cross-host redirect (since Go 1.8 it strips only
 // Authorization/Www-Authenticate/Cookie/Cookie2 on a domain change), so the SDK
@@ -76,7 +76,7 @@ func TestSecretNeverAppearsInErrorMessage(t *testing.T) {
 		t.Fatal("the API key must never leak into a verbose error rendering")
 	}
 	// ...but it WAS sent as the auth header (the request was genuinely authenticated).
-	if got := fake.At(0).H("X-Oc-Api-Key"); got != secret {
+	if got := fake.At(0).H("X-Api2convert-Api-Key"); got != secret {
 		t.Fatalf("auth header = %q, want the secret", got)
 	}
 }
@@ -144,10 +144,10 @@ func TestUploadUsesJobTokenNotAccountKeyAndDoesNotRedirect(t *testing.T) {
 	if len(seen) == 0 {
 		t.Fatal("upload server received no request")
 	}
-	if seen[0].Get("X-Oc-Token") != "tok-abc" {
-		t.Fatalf("upload token header = %q", seen[0].Get("X-Oc-Token"))
+	if seen[0].Get("X-Api2convert-Token") != "tok-abc" {
+		t.Fatalf("upload token header = %q", seen[0].Get("X-Api2convert-Token"))
 	}
-	if seen[0].Get("X-Oc-Api-Key") != "" {
+	if seen[0].Get("X-Api2convert-Api-Key") != "" {
 		t.Fatal("the account key must never reach the upload server")
 	}
 	if evil.Hits() != 0 {
@@ -169,7 +169,7 @@ func TestDownloadPasswordNotForwardedAcrossCrossHostRedirect(t *testing.T) {
 		t.Fatal("the download password must never be forwarded to a redirect target")
 	}
 	// The password WAS sent to the intended storage host (the request was real).
-	if seen := storage.Headers(); len(seen) == 0 || seen[0].Get("X-Oc-Download-Password") != "s3cret" {
+	if seen := storage.Headers(); len(seen) == 0 || seen[0].Get("X-Api2convert-Download-Password") != "s3cret" {
 		t.Fatal("the download password should reach the intended storage host")
 	}
 }

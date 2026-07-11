@@ -66,7 +66,7 @@ type transport struct {
 // request performs an authenticated JSON request and returns the decoded body
 // (a map[string]any, a []any, or an empty map for an empty body).
 func (t *transport) request(ctx context.Context, method, path string, body any, query url.Values, headers map[string]string) (any, error) {
-	reqHeaders := map[string]string{"X-Oc-Api-Key": t.config.apiKey}
+	reqHeaders := map[string]string{"X-Api2convert-Api-Key": t.config.apiKey}
 	for k, v := range headers {
 		reqHeaders[k] = v
 	}
@@ -201,7 +201,7 @@ func (t *transport) ensureSuccessful(resp *Response) error {
 // openDownload opens a (self-contained) download URL and returns the response for
 // streaming.
 //
-// A request carrying any X-Oc-* secret header (e.g. a download password) must not
+// A request carrying any X-Api2convert-* secret header (e.g. a download password) must not
 // follow redirects; a plain, passwordless download may follow storage/CDN
 // redirects. When a secret-bearing request is redirected, the no-redirect client
 // returns the 3xx as-is — surfaced as a NetworkError so a silently-empty file
@@ -209,7 +209,7 @@ func (t *transport) ensureSuccessful(resp *Response) error {
 func (t *transport) openDownload(ctx context.Context, uri string, headers map[string]string) (*Response, error) {
 	carriesSecret := false
 	for k := range headers {
-		if strings.HasPrefix(strings.ToLower(k), "x-oc-") {
+		if strings.HasPrefix(strings.ToLower(k), "x-api2convert-") {
 			carriesSecret = true
 			break
 		}

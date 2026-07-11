@@ -58,10 +58,10 @@ func TestUploadNeverSendsAccountKeyAndDoesNotRedirect(t *testing.T) {
 		t.Fatal(err)
 	}
 	req := tc.HTTP.At(0)
-	if req.H("X-Oc-Token") != "tok-abc" {
-		t.Fatalf("upload must authenticate with the job token, got %q", req.H("X-Oc-Token"))
+	if req.H("X-Api2convert-Token") != "tok-abc" {
+		t.Fatalf("upload must authenticate with the job token, got %q", req.H("X-Api2convert-Token"))
 	}
-	if req.H("X-Oc-Api-Key") != "" {
+	if req.H("X-Api2convert-Api-Key") != "" {
 		t.Fatal("the account key must never reach the upload server")
 	}
 	if req.FollowRedirects {
