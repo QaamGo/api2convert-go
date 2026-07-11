@@ -74,11 +74,7 @@ func nullableInt64(value any) *int64 {
 		}
 		return parseNumericString(t.String())
 	case float64:
-		if math.IsInf(t, 0) || math.IsNaN(t) {
-			return nil
-		}
-		n := int64(math.Trunc(t))
-		return &n
+		return truncToInt64(t)
 	case int:
 		n := int64(t)
 		return &n
@@ -101,10 +97,27 @@ func parseNumericString(s string) *int64 {
 		return &n
 	}
 	f, err := strconv.ParseFloat(trimmed, 64)
-	if err != nil || math.IsInf(f, 0) || math.IsNaN(f) {
+	if err != nil {
 		return nil
 	}
-	n := int64(math.Trunc(f))
+	return truncToInt64(f)
+}
+
+// truncToInt64 truncates f toward zero to an *int64, or returns nil when f is
+// NaN/Inf or falls outside the int64 range. A bare int64(f) for an out-of-range
+// float is implementation-defined (e.g. MinInt64 on amd64), which would hydrate
+// garbage instead of signaling absence — defeating the tolerant-hydration promise.
+func truncToInt64(f float64) *int64 {
+	if math.IsNaN(f) || math.IsInf(f, 0) {
+		return nil
+	}
+	t := math.Trunc(f)
+	// float64 cannot represent 2^63-1 exactly, so use 2^63 as the exclusive upper
+	// bound; -2^63 (int64 min) is exactly representable and allowed.
+	if t < -9223372036854775808.0 || t >= 9223372036854775808.0 {
+		return nil
+	}
+	n := int64(t)
 	return &n
 }
 

@@ -25,7 +25,7 @@ func TestUploadPostsMultipartToJobServerWithToken(t *testing.T) {
 	if err := os.WriteFile(src, []byte("FILEDATA"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	tc := testutil.NewTestClient()
+	tc := testutil.NewTestClient(t)
 	tc.HTTP.AddJSON(200, map[string]any{"id": "in-1", "type": "upload"})
 
 	in, err := tc.Client.Jobs().Upload(context.Background(), stagedJob(), src)
@@ -51,7 +51,7 @@ func TestUploadPostsMultipartToJobServerWithToken(t *testing.T) {
 }
 
 func TestUploadNeverSendsAccountKeyAndDoesNotRedirect(t *testing.T) {
-	tc := testutil.NewTestClient()
+	tc := testutil.NewTestClient(t)
 	tc.HTTP.AddJSON(200, map[string]any{"id": "in-1", "type": "upload"})
 
 	if _, err := tc.Client.Jobs().Upload(context.Background(), stagedJob(), []byte("bytes")); err != nil {
@@ -70,7 +70,7 @@ func TestUploadNeverSendsAccountKeyAndDoesNotRedirect(t *testing.T) {
 }
 
 func TestUploadFailsWhenJobHasNoServerOrToken(t *testing.T) {
-	tc := testutil.NewTestClient()
+	tc := testutil.NewTestClient(t)
 	job := api2convert.JobFromMap(map[string]any{"id": "job-1", "status": map[string]any{"code": "created"}})
 
 	_, err := tc.Client.Jobs().Upload(context.Background(), job, []byte("x"))
@@ -84,7 +84,7 @@ func TestUploadFailsWhenJobHasNoServerOrToken(t *testing.T) {
 }
 
 func TestUploadRejectsFilenameHeaderInjection(t *testing.T) {
-	tc := testutil.NewTestClient()
+	tc := testutil.NewTestClient(t)
 	tc.HTTP.AddJSON(200, map[string]any{"id": "in-1"})
 
 	// A hostile filename with CR/LF must not inject extra multipart header lines.

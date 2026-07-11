@@ -15,7 +15,7 @@ import (
 // subsequent download(s).
 func completedURLConvert(t *testing.T, opts ...api2convert.ConvertOption) (*api2convert.ConversionResult, *testutil.TestClient) {
 	t.Helper()
-	tc := testutil.NewTestClient()
+	tc := testutil.NewTestClient(t)
 	tc.HTTP.
 		AddJSON(201, map[string]any{"id": "job-1", "status": map[string]any{"code": "downloading"}}).
 		AddJSON(200, map[string]any{

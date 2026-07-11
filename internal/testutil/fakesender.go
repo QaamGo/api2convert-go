@@ -16,9 +16,17 @@ import (
 	"io"
 	"net/http"
 	"sync"
+	"time"
 
 	api2convert "github.com/QaamGo/api2convert-go/v10"
 )
+
+// TB is the subset of testing.TB the fake uses to fail fast on a missing fixture.
+// Satisfied by *testing.T.
+type TB interface {
+	Helper()
+	Fatalf(format string, args ...any)
+}
 
 // RecordedRequest is a captured outbound request (the Go analog of Node's
 // RecordedRequest / Java's requestAt(i)).
@@ -28,6 +36,8 @@ type RecordedRequest struct {
 	Header          http.Header
 	FollowRedirects bool
 	Replayable      bool
+	Timeout         time.Duration
+	Stream          bool
 	Body            []byte
 }
 
@@ -52,14 +62,35 @@ type FakeSender struct {
 	mu       sync.Mutex
 	requests []RecordedRequest
 	queue    []queued
+	t        TB // when set, a missing fixture is a hard test failure, not a swallowed error
 }
 
-// Send records the request and returns the next queued response.
-func (f *FakeSender) Send(_ context.Context, req *api2convert.Request) (*api2convert.Response, error) {
+// Fail wires a TB (e.g. *testing.T) so an empty fixture queue fails the test
+// immediately instead of returning a plain error the code under test might
+// mistake for the behavior it is exercising.
+func (f *FakeSender) Fail(t TB) *FakeSender {
+	f.mu.Lock()
+	f.t = t
+	f.mu.Unlock()
+	return f
+}
+
+// Send records the request and returns the next queued response. It honors ctx
+// cancellation and propagates MakeBody/body-read errors, mirroring the real
+// sender, so those guarantee-critical paths are actually exercised.
+func (f *FakeSender) Send(ctx context.Context, req *api2convert.Request) (*api2convert.Response, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
 	var body []byte
+	var bodyErr error
 	if req.MakeBody != nil {
-		if r, err := req.MakeBody(); err == nil {
-			body, _ = io.ReadAll(r)
+		r, err := req.MakeBody()
+		if err != nil {
+			bodyErr = err
+		} else if body, err = io.ReadAll(r); err != nil {
+			bodyErr = err
 		}
 	} else if req.Body != nil {
 		body = append([]byte(nil), req.Body...)
@@ -72,10 +103,23 @@ func (f *FakeSender) Send(_ context.Context, req *api2convert.Request) (*api2con
 		Header:          headerFromMap(req.Headers),
 		FollowRedirects: req.FollowRedirects,
 		Replayable:      req.Replayable,
+		Timeout:         req.Timeout,
+		Stream:          req.Stream,
 		Body:            body,
 	})
-	if len(f.queue) == 0 {
+	// A MakeBody / body-read failure is returned before consuming a fixture — the
+	// real sender never reaches the network in that case.
+	if bodyErr != nil {
 		f.mu.Unlock()
+		return nil, bodyErr
+	}
+	if len(f.queue) == 0 {
+		t := f.t
+		f.mu.Unlock()
+		if t != nil {
+			t.Helper()
+			t.Fatalf("fakesender: no queued response for %s %s (missing fixture?)", req.Method, req.URL)
+		}
 		return nil, fmt.Errorf("fakesender: no queued response for %s %s", req.Method, req.URL)
 	}
 	q := f.queue[0]

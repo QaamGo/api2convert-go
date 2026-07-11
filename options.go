@@ -161,9 +161,12 @@ func WithDownloadPassword(pw string) ConvertOption {
 }
 
 // WithOutputIndex selects which output file the result selects (default 0).
+// Applies to Convert only; ConvertAsync returns the Job (no result to select
+// from) and ignores it.
 func WithOutputIndex(i int) ConvertOption { return func(p *convertParams) { p.outputIndex = i } }
 
-// WithConvertTimeout overrides the poll timeout for this conversion.
+// WithConvertTimeout overrides the poll timeout for this conversion. Applies to
+// Convert only (which waits); ConvertAsync does not poll and ignores it.
 func WithConvertTimeout(d time.Duration) ConvertOption {
 	return func(p *convertParams) { p.timeout = &d }
 }

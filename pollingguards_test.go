@@ -11,7 +11,7 @@ import (
 )
 
 func TestWaitPollsAtLeastOnceEvenWithTinyTimeout(t *testing.T) {
-	tc := testutil.NewTestClient()
+	tc := testutil.NewTestClient(t)
 	tc.HTTP.AddJSON(200, map[string]any{"id": "j", "status": map[string]any{"code": "processing"}})
 
 	_, err := tc.Client.Jobs().Wait(context.Background(), "j", time.Nanosecond, true)
@@ -26,7 +26,7 @@ func TestWaitPollsAtLeastOnceEvenWithTinyTimeout(t *testing.T) {
 
 func TestPollIntervalFlooredToMinimum(t *testing.T) {
 	// A configured interval below the floor is clamped so polling can't busy-spin.
-	tc := testutil.NewTestClient(api2convert.WithPollInterval(1 * time.Millisecond))
+	tc := testutil.NewTestClient(t, api2convert.WithPollInterval(1*time.Millisecond))
 	tc.HTTP.
 		AddJSON(200, map[string]any{"id": "j", "status": map[string]any{"code": "processing"}}).
 		AddJSON(200, map[string]any{"id": "j", "status": map[string]any{"code": "completed"}})

@@ -6,9 +6,10 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"time"
 )
 
-// netHTTPSender is the default HttpSender, backed by net/http (no third-party
+// netHTTPSender is the default HTTPSender, backed by net/http (no third-party
 // dependency).
 //
 // Redirect policy is client-level in net/http, so this holds two clients sharing
@@ -30,8 +31,24 @@ type netHTTPSender struct {
 	follow     *http.Client
 }
 
-func newNetHTTPSender() *netHTTPSender {
-	base := http.DefaultTransport.(*http.Transport).Clone()
+func newNetHTTPSender(timeout time.Duration) *netHTTPSender {
+	// Clone the default transport when possible; fall back to a fresh one if a host
+	// app replaced http.DefaultTransport with a different RoundTripper (a bare type
+	// assertion would panic).
+	var base *http.Transport
+	if dt, ok := http.DefaultTransport.(*http.Transport); ok {
+		base = dt.Clone()
+	} else {
+		base = &http.Transport{}
+	}
+	// Bound the pre-body phase (TLS handshake + waiting for the response headers) so
+	// a stalled server can't hang forever — without capping a long but healthy body
+	// transfer, which the caller's context governs. Streamed requests rely on these
+	// budgets; JSON requests additionally get a whole-exchange deadline (see Send).
+	if timeout > 0 {
+		base.TLSHandshakeTimeout = timeout
+		base.ResponseHeaderTimeout = timeout
+	}
 	return &netHTTPSender{
 		noRedirect: &http.Client{
 			Transport: base,
@@ -61,9 +78,13 @@ func (s *netHTTPSender) Send(ctx context.Context, req *Request) (*Response, erro
 		body = bytes.NewReader(req.Body)
 	}
 
+	// A non-streamed (JSON control-plane) request gets a whole-exchange deadline. A
+	// streamed request must not — its body transfer is bounded only by the caller's
+	// context; the pre-body phase is bounded by the transport timeouts set in
+	// newNetHTTPSender.
 	rctx := ctx
 	var cancel context.CancelFunc
-	if req.Timeout > 0 {
+	if req.Timeout > 0 && !req.Stream {
 		rctx, cancel = context.WithTimeout(ctx, req.Timeout)
 	}
 

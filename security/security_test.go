@@ -234,7 +234,7 @@ func TestMalformedDownloadURISurfacesAsNetworkError(t *testing.T) {
 
 func TestTraversalFilenameReducedToBasename(t *testing.T) {
 	dir := t.TempDir()
-	tc := testutil.NewTestClient()
+	tc := testutil.NewTestClient(t)
 	tc.HTTP.AddRaw(200, []byte("X"))
 
 	out := api2convert.OutputFileOf("", "https://dl/x", "../../../etc/evil")
@@ -251,7 +251,7 @@ func TestTraversalFilenameReducedToBasename(t *testing.T) {
 }
 
 func TestMaxDownloadBytesRejectsOversizedBody(t *testing.T) {
-	tc := testutil.NewTestClient(api2convert.WithMaxDownloadBytes(4))
+	tc := testutil.NewTestClient(t, api2convert.WithMaxDownloadBytes(4))
 	tc.HTTP.AddRaw(200, []byte("far more than four bytes"))
 
 	out := api2convert.OutputFileOf("", "https://dl/x", "f")
@@ -336,7 +336,7 @@ func TestInputClassifierIsAnchoredAndLinear(t *testing.T) {
 	// effectively instant.
 	pathological := "http" + strings.Repeat("p", 100_000) + "x" // not a URL
 
-	tc := testutil.NewTestClient()
+	tc := testutil.NewTestClient(t)
 	// A staged create response, in case classification (wrongly) treated it as a path.
 	tc.HTTP.AddJSON(201, map[string]any{
 		"id": "job-1", "token": "tok", "server": "https://up/v2",
@@ -356,7 +356,7 @@ func TestInputClassifierIsAnchoredAndLinear(t *testing.T) {
 	}
 
 	// A real URL is still classified as a remote input (started immediately).
-	tc2 := testutil.NewTestClient()
+	tc2 := testutil.NewTestClient(t)
 	tc2.HTTP.AddJSON(201, map[string]any{"id": "job-2", "status": map[string]any{"code": "downloading"}})
 	if _, err := tc2.Client.ConvertAsync(ctx(), "https://example.com/x", "png"); err != nil {
 		t.Fatal(err)

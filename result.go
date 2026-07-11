@@ -37,6 +37,9 @@ func (d *FileDownload) URL() string { return d.output.URI }
 // conversion time is applied automatically; pass one here only to override it.
 // Returns the path written to.
 func (d *FileDownload) Save(ctx context.Context, pathOrDir string, downloadPassword ...string) (string, error) {
+	if d.transport == nil {
+		return "", newError("This FileDownload has no transport; create it with Client.Download or from a ConversionResult, not a struct literal.", nil)
+	}
 	target := d.resolveTarget(pathOrDir)
 	parent := filepath.Dir(target)
 	if parent == "" {
@@ -52,34 +55,57 @@ func (d *FileDownload) Save(ctx context.Context, pathOrDir string, downloadPassw
 	}
 	defer resp.Body.Close()
 
-	f, err := os.Create(target)
+	// Stream to a temp file in the target's directory and rename over the target
+	// only after a clean copy+close. This never truncates the target up front and
+	// never leaves a partial file (nor destroys a pre-existing complete file) on a
+	// mid-stream failure.
+	f, err := os.CreateTemp(parent, ".a2c-download-*.tmp")
 	if err != nil {
 		return "", newError("Could not write file: "+target, err)
 	}
-	defer f.Close()
+	tmp := f.Name()
+	committed := false
+	defer func() {
+		if !committed {
+			_ = f.Close()
+			_ = os.Remove(tmp)
+		}
+	}()
 
-	if _, err := io.Copy(f, d.capReader(resp.Body)); err != nil {
-		// A failed copy must not leave a partial/corrupt file behind. Close it
-		// first so the removal is portable, then delete it best-effort.
-		f.Close()
-		_ = os.Remove(target)
+	if _, err := io.Copy(f, &downloadReader{r: d.capReader(resp.Body)}); err != nil {
+		// A read-side (network) failure is surfaced as a typed NetworkError by
+		// downloadReader / capReader; anything else is a write-side (filesystem)
+		// failure and keeps the "could not write file" message.
 		var a2c Api2ConvertError
 		if errors.As(err, &a2c) {
 			return "", err
 		}
 		return "", newError("Could not write file: "+target, err)
 	}
+	// Capture the close error: some filesystems (NFS, quota / full disk with delayed
+	// allocation) only report a failed write at close, and silently dropping it
+	// would report an incomplete file as a success.
+	if err := f.Close(); err != nil {
+		return "", newError("Could not write file: "+target, err)
+	}
+	if err := os.Rename(tmp, target); err != nil {
+		return "", newError("Could not write file: "+target, err)
+	}
+	committed = true
 	return target, nil
 }
 
 // Contents downloads the file and returns its contents (loads into memory).
 func (d *FileDownload) Contents(ctx context.Context, downloadPassword ...string) ([]byte, error) {
+	if d.transport == nil {
+		return nil, newError("This FileDownload has no transport; create it with Client.Download or from a ConversionResult, not a struct literal.", nil)
+	}
 	resp, err := d.transport.openDownload(ctx, d.output.URI, d.headers(downloadPassword))
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	data, err := io.ReadAll(d.capReader(resp.Body))
+	data, err := io.ReadAll(&downloadReader{r: d.capReader(resp.Body)})
 	if err != nil {
 		var a2c Api2ConvertError
 		if errors.As(err, &a2c) {
@@ -88,6 +114,23 @@ func (d *FileDownload) Contents(ctx context.Context, downloadPassword ...string)
 		return nil, newError("failed to read download: "+err.Error(), err)
 	}
 	return data, nil
+}
+
+// downloadReader wraps a download body so a mid-stream read failure surfaces as a
+// typed *NetworkError — a network interruption is not a filesystem error and must
+// be matchable with errors.As(&NetworkError). Errors already typed as
+// Api2ConvertError (e.g. the WithMaxDownloadBytes cap) pass through unchanged.
+type downloadReader struct{ r io.Reader }
+
+func (d *downloadReader) Read(p []byte) (int, error) {
+	n, err := d.r.Read(p)
+	if err != nil && !errors.Is(err, io.EOF) {
+		var a2c Api2ConvertError
+		if !errors.As(err, &a2c) {
+			return n, &NetworkError{genericError{Message: "download interrupted: " + err.Error(), Cause: err}}
+		}
+	}
+	return n, err
 }
 
 func (d *FileDownload) capReader(r io.Reader) io.Reader {
@@ -103,7 +146,13 @@ func (d *FileDownload) resolveTarget(pathOrDir string) string {
 		isDirectory(pathOrDir)
 	if looksLikeDir {
 		name := firstUsable(safeName(d.output.Filename), safeName(d.output.ID), "output")
-		return filepath.Join(strings.TrimRight(pathOrDir, `/\`), name)
+		dir := strings.TrimRight(pathOrDir, `/\`)
+		if dir == "" {
+			// pathOrDir was all separators (e.g. "/"): keep the root rather than
+			// collapsing to the current working directory.
+			dir = string(filepath.Separator)
+		}
+		return filepath.Join(dir, name)
 	}
 	return pathOrDir
 }
@@ -136,8 +185,11 @@ func newConversionResult(job Job, t *transport, index int, downloadPassword *str
 // Output returns the selected output file (the first one by default). An index not
 // present — including a negative one — is an error rather than wrapping around.
 func (r *ConversionResult) Output() (OutputFile, error) {
-	if r.index < 0 || r.index >= len(r.Job.Output) {
+	if len(r.Job.Output) == 0 {
 		return OutputFile{}, newError("The job produced no output files.", nil)
+	}
+	if r.index < 0 || r.index >= len(r.Job.Output) {
+		return OutputFile{}, newError(fmt.Sprintf("Output index %d is out of range; the job produced %d output file(s).", r.index, len(r.Job.Output)), nil)
 	}
 	return r.Job.Output[r.index], nil
 }
@@ -175,6 +227,9 @@ func (r *ConversionResult) Contents(ctx context.Context, downloadPassword ...str
 // Download returns a FileDownload for a specific output (defaults to the selected
 // one).
 func (r *ConversionResult) Download(output ...OutputFile) (*FileDownload, error) {
+	if r.transport == nil {
+		return nil, newError("This ConversionResult has no transport; obtain it from Client.Convert, not a struct literal.", nil)
+	}
 	var out OutputFile
 	if len(output) > 0 {
 		out = output[0]

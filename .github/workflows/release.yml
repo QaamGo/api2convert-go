@@ -29,6 +29,27 @@ jobs:
             echo "tag v$tag does not match version.go ($ver)"; exit 1
           fi
 
+      # Guards against publishing an uninstallable tag: Go semantic import
+      # versioning requires a module released at major >= 2 to carry a matching
+      # /vN suffix on its module path. Without this, `go get …@v10.x` fails at
+      # go.mod parse and proxy.golang.org will never serve the tag.
+      - name: Verify module path suffix matches major version
+        run: |
+          mod="$(go list -m)"
+          ver="$(sed -n 's/.*Version = "\(.*\)".*/\1/p' version.go)"
+          major="${ver%%.*}"
+          last="${mod##*/}"
+          if [ "$major" -ge 2 ]; then
+            if [ "$last" != "v$major" ]; then
+              echo "module path '$mod' must end in /v$major to publish v$ver (Go semantic import versioning)"; exit 1
+            fi
+          else
+            case "$last" in
+              v[0-9]*) echo "module path '$mod' carries a version suffix but release is v$ver"; exit 1 ;;
+            esac
+          fi
+          echo "OK: module path '$mod' is installable at v$ver"
+
       - name: Guardrail
         run: |
           out="$(gofmt -l .)"; [ -z "$out" ] || { echo "gofmt needed: $out"; exit 1; }

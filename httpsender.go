@@ -38,8 +38,18 @@ type Request struct {
 	// one-shot streams).
 	Replayable bool
 
-	// Timeout is the per-request network timeout.
+	// Timeout is the per-request network timeout. For a non-streamed (JSON
+	// control-plane) request it is a whole-exchange deadline. For a streamed
+	// request (Stream == true) it bounds only the pre-body phase (see Stream).
 	Timeout time.Duration
+
+	// Stream marks a request whose body is a large, possibly slow transfer (a file
+	// download response or an upload request body). For such a request Timeout must
+	// bound only the pre-body phase — connection, TLS handshake and waiting for the
+	// response headers — never the body transfer itself, which is governed solely
+	// by the caller's context. A whole-exchange deadline here would fail a healthy
+	// large transfer purely because it took longer than the timeout.
+	Stream bool
 }
 
 // Response is a transport-agnostic HTTP response. Body is a single-use stream the

@@ -12,7 +12,7 @@ import (
 )
 
 func TestConvertFromURLCreatesStartedJobPollsAndReturns(t *testing.T) {
-	tc := testutil.NewTestClient()
+	tc := testutil.NewTestClient(t)
 	tc.HTTP.
 		AddJSON(201, map[string]any{"id": "job-1", "status": map[string]any{"code": "downloading"}}).
 		AddJSON(200, map[string]any{
@@ -63,7 +63,7 @@ func TestConvertFromLocalPathUploadsThenStarts(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	tc := testutil.NewTestClient()
+	tc := testutil.NewTestClient(t)
 	tc.HTTP.
 		AddJSON(201, map[string]any{"id": "job-1", "token": "tok-abc", "server": "https://up.example.com/v2", "status": map[string]any{"code": "incomplete"}}).
 		AddJSON(200, map[string]any{"id": "in-1", "type": "upload"}).
@@ -107,7 +107,7 @@ func TestConvertFromLocalPathUploadsThenStarts(t *testing.T) {
 }
 
 func TestConvertFromReaderUsesNonReplayableUpload(t *testing.T) {
-	tc := testutil.NewTestClient()
+	tc := testutil.NewTestClient(t)
 	tc.HTTP.
 		AddJSON(201, map[string]any{"id": "job-1", "token": "tok", "server": "https://up/v2", "status": map[string]any{"code": "incomplete"}}).
 		AddJSON(200, map[string]any{"id": "in-1", "type": "upload"}).
@@ -127,7 +127,7 @@ func TestConvertFromReaderUsesNonReplayableUpload(t *testing.T) {
 }
 
 func TestConvertAsyncReturnsWithoutPollingAndSetsCallback(t *testing.T) {
-	tc := testutil.NewTestClient()
+	tc := testutil.NewTestClient(t)
 	tc.HTTP.AddJSON(201, map[string]any{"id": "job-1", "status": map[string]any{"code": "downloading"}})
 
 	job, err := tc.Client.ConvertAsync(context.Background(), "https://example.com/in.jpg", "png",
@@ -149,7 +149,7 @@ func TestConvertAsyncReturnsWithoutPollingAndSetsCallback(t *testing.T) {
 }
 
 func TestConvertPassesConversionOptionsAndCategory(t *testing.T) {
-	tc := testutil.NewTestClient()
+	tc := testutil.NewTestClient(t)
 	tc.HTTP.
 		AddJSON(201, map[string]any{"id": "job-1", "status": map[string]any{"code": "downloading"}}).
 		AddJSON(200, map[string]any{"id": "job-1", "status": map[string]any{"code": "completed"}, "output": []any{map[string]any{"uri": "https://dl/x"}}})

@@ -13,7 +13,7 @@ import (
 
 func TestStatusMapsToTypedError(t *testing.T) {
 	// maxRetries=0 so 429/5xx surface immediately (one attempt each).
-	tc := testutil.NewTestClient(api2convert.WithMaxRetries(0))
+	tc := testutil.NewTestClient(t, api2convert.WithMaxRetries(0))
 
 	cases := []struct {
 		status int
@@ -58,7 +58,7 @@ func TestStatusMapsToTypedError(t *testing.T) {
 }
 
 func TestRateLimitErrorCarriesRetryAfter(t *testing.T) {
-	tc := testutil.NewTestClient(api2convert.WithMaxRetries(0))
+	tc := testutil.NewTestClient(t, api2convert.WithMaxRetries(0))
 	tc.HTTP.AddJSON(429, map[string]any{"message": "slow"}, http.Header{"Retry-After": []string{"30"}})
 
 	_, err := tc.Client.Jobs().Get(context.Background(), "j")
@@ -72,7 +72,7 @@ func TestRateLimitErrorCarriesRetryAfter(t *testing.T) {
 }
 
 func TestNonJSONSuccessBodyIsNetworkError(t *testing.T) {
-	tc := testutil.NewTestClient()
+	tc := testutil.NewTestClient(t)
 	tc.HTTP.AddText(200, "<html>not json</html>")
 
 	_, err := tc.Client.Jobs().Get(context.Background(), "j")

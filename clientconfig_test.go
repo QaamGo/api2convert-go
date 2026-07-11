@@ -11,7 +11,7 @@ import (
 )
 
 func TestDefaultBaseURL(t *testing.T) {
-	tc := testutil.NewTestClient()
+	tc := testutil.NewTestClient(t)
 	tc.HTTP.AddJSON(200, map[string]any{"id": "x"})
 	if _, err := tc.Client.Jobs().Get(context.Background(), "x"); err != nil {
 		t.Fatal(err)
@@ -22,7 +22,7 @@ func TestDefaultBaseURL(t *testing.T) {
 }
 
 func TestOptionOverridesBaseURLAndTrimsTrailingSlash(t *testing.T) {
-	tc := testutil.NewTestClient(api2convert.WithBaseURL("https://example.test/v9/"))
+	tc := testutil.NewTestClient(t, api2convert.WithBaseURL("https://example.test/v9/"))
 	tc.HTTP.AddJSON(200, map[string]any{"id": "x"})
 	if _, err := tc.Client.Jobs().Get(context.Background(), "x"); err != nil {
 		t.Fatal(err)

@@ -101,7 +101,9 @@ func (t *transport) request(ctx context.Context, method, path string, body any, 
 // have acted, so a blind retry could create a duplicate job); a non-replayable
 // body is sent once.
 func (t *transport) send(ctx context.Context, req *Request) (*Response, error) {
-	req.Headers["Accept"] = "application/json"
+	if _, ok := req.Headers["Accept"]; !ok {
+		req.Headers["Accept"] = "application/json"
+	}
 	req.Headers["User-Agent"] = userAgent
 	idempotent := isIdempotent(req)
 	attempt := 0
@@ -121,7 +123,7 @@ func (t *transport) send(ctx context.Context, req *Request) (*Response, error) {
 				attempt++
 				continue
 			}
-			return nil, &NetworkError{genericError{Message: "Request to API2Convert failed: " + err.Error(), Cause: err}}
+			return nil, &NetworkError{genericError{Message: "Request to API2Convert failed: " + t.redact(err.Error()), Cause: err}}
 		}
 
 		status := resp.Status
@@ -147,16 +149,24 @@ func (t *transport) interpret(resp *Response) (any, error) {
 	if err := t.ensureSuccessful(resp); err != nil {
 		return nil, err
 	}
+	if resp.Status >= 300 {
+		// A 3xx on the no-redirect authenticated JSON path is not a usable response:
+		// an empty-body redirect would otherwise hydrate a zero-value model and make
+		// Convert poll the wrong endpoint. Surface it as a typed error instead of
+		// silently succeeding (mirrors openDownload's redirect guard).
+		discardBody(resp)
+		return nil, &NetworkError{genericError{Message: "API2Convert returned an unexpected redirect (HTTP " + strconv.Itoa(resp.Status) + ") on an authenticated request."}}
+	}
 	raw, err := readAllAndClose(resp.Body)
 	if err != nil {
-		return nil, &NetworkError{genericError{Message: "failed to read API2Convert response: " + err.Error(), Cause: err}}
+		return nil, &NetworkError{genericError{Message: "failed to read API2Convert response: " + t.redact(err.Error()), Cause: err}}
 	}
 	if len(raw) == 0 {
 		return map[string]any{}, nil
 	}
 	decoded, err := decodeJSON(raw)
 	if err != nil {
-		return nil, &NetworkError{genericError{Message: "API2Convert returned a non-JSON success response: " + err.Error(), Cause: err}}
+		return nil, &NetworkError{genericError{Message: "API2Convert returned a non-JSON success response: " + t.redact(err.Error()), Cause: err}}
 	}
 	switch decoded.(type) {
 	case map[string]any, []any:
@@ -208,6 +218,7 @@ func (t *transport) openDownload(ctx context.Context, uri string, headers map[st
 	for k, v := range headers {
 		h[k] = v
 	}
+	h["Accept"] = "*/*" // a download is binary, not JSON
 	req := &Request{
 		Method:          http.MethodGet,
 		URL:             uri,
@@ -215,6 +226,7 @@ func (t *transport) openDownload(ctx context.Context, uri string, headers map[st
 		FollowRedirects: !carriesSecret,
 		Replayable:      true,
 		Timeout:         t.config.timeout,
+		Stream:          true,
 	}
 	resp, err := t.send(ctx, req)
 	if err != nil {
@@ -227,7 +239,23 @@ func (t *transport) openDownload(ctx context.Context, uri string, headers map[st
 		discardBody(resp)
 		return nil, &NetworkError{genericError{Message: "The download did not resolve: a redirect was not followed because the request carried a secret header."}}
 	}
+	if resp.Body == nil {
+		// A conforming sender always sets Body; guard against a custom one that does
+		// not, so Save/Contents never nil-panic on the deferred Close.
+		return nil, &NetworkError{genericError{Message: "The download response had no body."}}
+	}
 	return resp, nil
+}
+
+// redact removes the account API key from a string before it is placed in an
+// error message, upholding the guarantee that a key never surfaces in errors or
+// logs — even if a wrapped transport error (e.g. a *url.Error echoing the URL)
+// were to contain it.
+func (t *transport) redact(s string) string {
+	if t.config.apiKey == "" {
+		return s
+	}
+	return strings.ReplaceAll(s, t.config.apiKey, "[REDACTED]")
 }
 
 func (t *transport) url(path string, query url.Values) string {
@@ -333,12 +361,18 @@ func decodeSafe(resp *Response) map[string]any {
 	return map[string]any{}
 }
 
+// maxResponseBytes caps how much of a control-plane (API / error) JSON body the
+// SDK buffers into memory, so a hostile or buggy server cannot force an unbounded
+// read on these paths. File downloads are streamed and bounded separately by
+// WithMaxDownloadBytes.
+const maxResponseBytes = 16 << 20 // 16 MiB
+
 func readAllAndClose(rc io.ReadCloser) ([]byte, error) {
 	if rc == nil {
 		return nil, nil
 	}
 	defer rc.Close()
-	return io.ReadAll(rc)
+	return io.ReadAll(io.LimitReader(rc, maxResponseBytes))
 }
 
 // discardBody drains and closes an unconsumed body to free the connection between

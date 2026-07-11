@@ -15,7 +15,7 @@ import (
 func hdr(k, v string) http.Header { return http.Header{k: []string{v}} }
 
 func TestRetries503ThenSucceedsOnIdempotentGet(t *testing.T) {
-	tc := testutil.NewTestClient()
+	tc := testutil.NewTestClient(t)
 	tc.HTTP.
 		AddJSON(503, map[string]any{"message": "busy"}).
 		AddJSON(200, map[string]any{"id": "j"})
@@ -33,7 +33,7 @@ func TestRetries503ThenSucceedsOnIdempotentGet(t *testing.T) {
 }
 
 func TestRetriesNetworkErrorThenSucceeds(t *testing.T) {
-	tc := testutil.NewTestClient()
+	tc := testutil.NewTestClient(t)
 	tc.HTTP.
 		AddError(errors.New("connection reset")).
 		AddJSON(200, map[string]any{"id": "j"})
@@ -48,7 +48,7 @@ func TestRetriesNetworkErrorThenSucceeds(t *testing.T) {
 
 func TestWrapsExhaustedRetriesInNetworkError(t *testing.T) {
 	sentinel := errors.New("dns failure")
-	tc := testutil.NewTestClient()
+	tc := testutil.NewTestClient(t)
 	tc.HTTP.AddError(sentinel).AddError(sentinel).AddError(sentinel)
 
 	_, err := tc.Client.Jobs().Get(context.Background(), "j")
@@ -65,7 +65,7 @@ func TestWrapsExhaustedRetriesInNetworkError(t *testing.T) {
 }
 
 func TestNeverRetriesBarePOSTOn5xx(t *testing.T) {
-	tc := testutil.NewTestClient()
+	tc := testutil.NewTestClient(t)
 	tc.HTTP.AddJSON(503, map[string]any{"message": "down"})
 
 	_, err := tc.Client.Jobs().Create(context.Background(), map[string]any{"conversion": []any{}})
@@ -79,7 +79,7 @@ func TestNeverRetriesBarePOSTOn5xx(t *testing.T) {
 }
 
 func TestRetriesPOSTWithIdempotencyKeyOn5xx(t *testing.T) {
-	tc := testutil.NewTestClient()
+	tc := testutil.NewTestClient(t)
 	tc.HTTP.
 		AddJSON(503, map[string]any{"message": "down"}).
 		AddJSON(201, map[string]any{"id": "job-1"})
@@ -93,7 +93,7 @@ func TestRetriesPOSTWithIdempotencyKeyOn5xx(t *testing.T) {
 }
 
 func TestRetriesPOSTOn429WithoutIdempotencyKey(t *testing.T) {
-	tc := testutil.NewTestClient()
+	tc := testutil.NewTestClient(t)
 	tc.HTTP.
 		AddJSON(429, map[string]any{"message": "slow down"}).
 		AddJSON(201, map[string]any{"id": "job-1"})
@@ -107,7 +107,7 @@ func TestRetriesPOSTOn429WithoutIdempotencyKey(t *testing.T) {
 }
 
 func TestNeverRetriesNonReplayableStreamOn429(t *testing.T) {
-	tc := testutil.NewTestClient()
+	tc := testutil.NewTestClient(t)
 	job := api2convert.JobFromMap(map[string]any{
 		"id": "job-9", "token": "tok", "server": "https://up/v2",
 		"status": map[string]any{"code": "incomplete"},
@@ -128,7 +128,7 @@ func TestNeverRetriesNonReplayableStreamOn429(t *testing.T) {
 }
 
 func TestRetriesReplayableBytesUploadOn429(t *testing.T) {
-	tc := testutil.NewTestClient()
+	tc := testutil.NewTestClient(t)
 	job := api2convert.JobFromMap(map[string]any{
 		"id": "job-9", "token": "tok", "server": "https://up/v2",
 		"status": map[string]any{"code": "incomplete"},
@@ -146,7 +146,7 @@ func TestRetriesReplayableBytesUploadOn429(t *testing.T) {
 }
 
 func TestRetryAfterSecondsHonored(t *testing.T) {
-	tc := testutil.NewTestClient()
+	tc := testutil.NewTestClient(t)
 	tc.HTTP.
 		AddJSON(503, map[string]any{"message": "busy"}, hdr("Retry-After", "2")).
 		AddJSON(200, map[string]any{"id": "j"})
@@ -160,7 +160,7 @@ func TestRetryAfterSecondsHonored(t *testing.T) {
 }
 
 func TestRetryAfterHTTPDateHonored(t *testing.T) {
-	tc := testutil.NewTestClient()
+	tc := testutil.NewTestClient(t)
 	when := time.Now().Add(5 * time.Second).UTC().Format(http.TimeFormat)
 	tc.HTTP.
 		AddJSON(503, map[string]any{"message": "busy"}, hdr("Retry-After", when)).
@@ -176,7 +176,7 @@ func TestRetryAfterHTTPDateHonored(t *testing.T) {
 }
 
 func TestRetryAfterClampedToCeiling(t *testing.T) {
-	tc := testutil.NewTestClient()
+	tc := testutil.NewTestClient(t)
 	tc.HTTP.
 		AddJSON(429, map[string]any{"message": "slow"}, hdr("Retry-After", "9999")).
 		AddJSON(200, map[string]any{"id": "j"})

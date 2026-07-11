@@ -96,7 +96,11 @@ default:
 	var cf *api2convert.ConversionFailedError
 	switch {
 	case errors.As(err, &rl):
-		log.Printf("rate limited; retry after %v", rl.RetryAfter)
+		if rl.RetryAfter != nil {
+			log.Printf("rate limited; retry after %ds", *rl.RetryAfter)
+		} else {
+			log.Print("rate limited; retry after (unspecified)")
+		}
 	case errors.As(err, &ve):
 		log.Printf("invalid request: %v", ve)
 	case errors.As(err, &cf):
@@ -117,7 +121,8 @@ Verify a signed callback (HMAC-SHA256 over the raw body, delivered in the `X-Oc-
 ```go
 event, err := api2convert.Webhooks().ConstructEvent(rawBody, signatureHeader, "YOUR_WEBHOOK_SECRET")
 if err != nil {
-	// invalid signature — reject
+	// invalid signature — reject the request and stop (do not use event)
+	return
 }
 job := event.Job
 ```

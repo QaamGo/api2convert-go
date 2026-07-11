@@ -265,26 +265,31 @@ func (r *PresetsResource) Delete(ctx context.Context, presetID string) error {
 }
 
 // StatsResource returns API usage statistics. The response shape is free-form
-// (returned as-is). filter is either an API key to scope to, or "all".
+// (returned as-is). filter is "single" (only the calling API key) or "all"
+// (every key on the account, the default); the spec enum is {"single","all"}.
+// The request is scoped by the X-Oc-Api-Key header, so a key is never placed in
+// the URL — do not pass a key as filter.
 type StatsResource struct {
 	transport *transport
 }
 
-// Day returns usage for a day (format yyyy-mm-dd).
+// Day returns usage for a day (format yyyy-mm-dd). filter is "single" or "all".
 func (r *StatsResource) Day(ctx context.Context, day, filter string) (any, error) {
 	return r.transport.request(ctx, "GET", "/stats/day/"+seg(day)+"/"+seg(statsFilter(filter)), nil, nil, nil)
 }
 
-// Month returns usage for a month (format yyyy-mm).
+// Month returns usage for a month (format yyyy-mm). filter is "single" or "all".
 func (r *StatsResource) Month(ctx context.Context, month, filter string) (any, error) {
 	return r.transport.request(ctx, "GET", "/stats/month/"+seg(month)+"/"+seg(statsFilter(filter)), nil, nil, nil)
 }
 
-// Year returns usage for a year (format yyyy).
+// Year returns usage for a year (format yyyy). filter is "single" or "all".
 func (r *StatsResource) Year(ctx context.Context, year, filter string) (any, error) {
 	return r.transport.request(ctx, "GET", "/stats/year/"+seg(year)+"/"+seg(statsFilter(filter)), nil, nil, nil)
 }
 
+// statsFilter defaults an empty filter to "all" (in lockstep with the sibling
+// SDKs). The spec enum is {"single","all"}.
 func statsFilter(filter string) string {
 	if filter == "" {
 		return "all"

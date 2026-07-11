@@ -50,6 +50,17 @@ junior-friendly surface — one-call `Convert()` — and use AI to keep it curre
 6. **Record + version.** Add a `docs/CHANGELOG.md` entry and bump `Version` in `version.go` per SemVer
    (additive spec change → minor; breaking public-surface change → major). Tag `vX.Y.Z`.
 
+## Module path & versioning (Go semantic import versioning)
+
+- The version tracks the shared contract version (lockstep with the PHP/Python/Java/Node SDKs), so the
+  Go SDK is at **major 10**. Go's semantic import versioning therefore requires the module path to
+  carry a **`/v10` suffix**: the module path is `github.com/QaamGo/api2convert-go/v10` and consumers
+  import `…/api2convert-go/v10`. Without the suffix, `go get …@v10.x` fails at go.mod parse and the
+  proxy never serves the tag. `release.yml` guards this (the "module path suffix matches major
+  version" step); keep it.
+- A breaking public-surface change that bumps the **major** to 11 must bump the module path to `/v11`
+  and update every import — such changes break already-published `v10.x` consumers, so batch them.
+
 ## Guarantees to uphold (don't break these)
 
 - **Never commit a real API key, token or secret** — not in source, tests, fixtures, examples, CI
@@ -88,6 +99,12 @@ The contract fixes names and semantics; these are the only places Go deviates, a
   strings use the empty string (consult `Raw` for the exact JSON value).
 - **The security suite is a black-box package** (`security/`, `package security_test`) runnable in
   isolation via `go test ./security/...` — the Go analog of the siblings' isolated security suites.
+
+### Additive Go-only hardening (beyond the contract)
+
+- **`WithMaxDownloadBytes(n)`** caps the bytes read from a download (unlimited by default), turning an
+  oversized response into a `*NetworkError`. This is additive hardening, not part of the shared
+  contract — see `SECURITY.md`. It is intentional extra public surface, not drift.
 
 ## Conventions
 

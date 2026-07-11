@@ -29,7 +29,11 @@ import (
 
 var urlRE = regexp.MustCompile(`(?i)^https?://`)
 
-// Client is the API2Convert client. Construct it with New.
+// Client is the API2Convert client. Construct it with New. A Client is safe for
+// concurrent use by multiple goroutines: its configuration is set once in New and
+// never mutated, and the default HTTP sender and jitter source are themselves
+// goroutine-safe. (If you inject a Rand via WithRand, it must also be safe for
+// concurrent use.)
 type Client struct {
 	transport   *transport
 	jobs        *JobsResource
@@ -55,9 +59,10 @@ func New(apiKey string, opts ...Option) (*Client, error) {
 		return nil, &ConfigError{genericError{Message: "No API key provided. Pass it to New or set the API2CONVERT_API_KEY environment variable."}}
 	}
 
+	cfg := b.buildConfig(key)
 	sender := b.sender
 	if sender == nil {
-		sender = newNetHTTPSender()
+		sender = newNetHTTPSender(cfg.timeout)
 	}
 	sleeper := b.sleeper
 	if sleeper == nil {
@@ -68,7 +73,7 @@ func New(apiKey string, opts ...Option) (*Client, error) {
 		rnd = defaultRand
 	}
 
-	tr := &transport{sender: sender, config: b.buildConfig(key), sleep: sleeper, rand: rnd}
+	tr := &transport{sender: sender, config: cfg, sleep: sleeper, rand: rnd}
 	up := &fileUploader{transport: tr}
 	return &Client{
 		transport:   tr,
@@ -85,7 +90,7 @@ func New(apiKey string, opts ...Option) (*Client, error) {
 // input is a local file path, a public URL (^https?://), in-memory []byte, or an
 // io.Reader. Name the target format in to, then Save the returned result. Extra
 // controls (conversion options, category, download password, output index, poll
-// timeout) are supplied via ConvertOptions.
+// timeout) are supplied via ConvertOption values (the With* functions).
 func (c *Client) Convert(ctx context.Context, input any, to string, opts ...ConvertOption) (*ConversionResult, error) {
 	p := newConvertParams(opts)
 	job, err := c.startConversion(ctx, input, to, p, false)

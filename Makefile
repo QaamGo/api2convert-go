@@ -1,5 +1,6 @@
 GO ?= go
-STATICCHECK_VERSION ?= latest
+# Pinned (not "latest"), per AGENTS.md — dev tools run via `go run …@pinned`.
+STATICCHECK_VERSION ?= 2025.1.1
 
 .PHONY: help fmt fmt-fix vet staticcheck test test-security test-live check tidy
 
@@ -28,7 +29,7 @@ test-security: ## The independent security suite, run in isolation
 test-live: ## Live conformance — requires API2CONVERT_API_KEY (export the behat key)
 	$(GO) test -tags live -v -timeout 300s ./live/...
 
-check: fmt vet test test-security ## Default guardrail (fmt + vet + unit + security)
+check: fmt vet tidy test test-security ## Default guardrail (fmt + vet + zero-dep + unit + security)
 
 tidy: ## Verify go.mod stays dependency-free
 	$(GO) mod tidy

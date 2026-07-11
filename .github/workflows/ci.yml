@@ -4,6 +4,7 @@ on:
   push:
     branches: [master, main]
   pull_request:
+  workflow_dispatch: # enables the manual live-run path the `live` job gates on
 
 permissions:
   contents: read
@@ -15,7 +16,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22"
+          go-version: "stable"
           cache: true
       - name: gofmt
         run: |
@@ -23,13 +24,25 @@ jobs:
           if [ -n "$out" ]; then echo "gofmt needed:"; echo "$out"; exit 1; fi
       - name: go vet
         run: go vet ./...
+      # Keep the live-tagged code compilable even though it only runs in the live
+      # job (behind a key). vet exercises the `live` build tag without hitting the API.
+      - name: go vet (live build tag)
+        run: go vet -tags live ./...
+      - name: Zero-dependency guarantee (go.mod stays require-free)
+        run: |
+          go mod tidy
+          if [ -n "$(git status --porcelain go.mod go.sum)" ]; then
+            echo "go.mod/go.sum changed — the SDK must stay dependency-free"; exit 1
+          fi
 
   test:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        go: ["1.22", "1.23", "1.24"]
+        # 1.22 is the go.mod minimum (pin it for back-compat); oldstable/stable
+        # track the two currently-supported releases so the matrix never goes EOL.
+        go: ["1.22", "oldstable", "stable"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -48,14 +61,17 @@ jobs:
     if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master' }}
     runs-on: ubuntu-latest
     continue-on-error: true # allow_failure equivalent
-    env:
-      API2CONVERT_API_KEY: ${{ secrets.API2CONVERT_API_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22"
+          go-version: "stable"
           cache: true
+      # The production key is scoped to only this step (not job-level env), so the
+      # third-party checkout/setup-go actions never see it.
       - name: Live conformance (skips if no key)
-        if: ${{ env.API2CONVERT_API_KEY != '' }}
-        run: go test -tags live -timeout 300s ./live/...
+        env:
+          API2CONVERT_API_KEY: ${{ secrets.API2CONVERT_API_KEY }}
+        run: |
+          if [ -z "$API2CONVERT_API_KEY" ]; then echo "no key; skipping live tests"; exit 0; fi
+          go test -tags live -timeout 300s ./live/...

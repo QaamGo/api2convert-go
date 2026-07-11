@@ -13,7 +13,7 @@ import (
 
 func TestSaveUsesAPIFilenameWhenTargetIsDir(t *testing.T) {
 	dir := t.TempDir()
-	tc := testutil.NewTestClient()
+	tc := testutil.NewTestClient(t)
 	tc.HTTP.AddRaw(200, []byte("BYTES"))
 
 	out := api2convert.OutputFileOf("", "https://dl/x", "result.png")
@@ -40,7 +40,7 @@ func TestSaveUsesAPIFilenameWhenTargetIsDir(t *testing.T) {
 
 func TestSaveTraversalFilenameReducedToBasename(t *testing.T) {
 	dir := t.TempDir()
-	tc := testutil.NewTestClient()
+	tc := testutil.NewTestClient(t)
 	tc.HTTP.AddRaw(200, []byte("X"))
 
 	out := api2convert.OutputFileOf("", "https://dl/x", "../../../etc/evil")
@@ -55,7 +55,7 @@ func TestSaveTraversalFilenameReducedToBasename(t *testing.T) {
 
 func TestSaveFallsBackToOutputWhenNameUnusable(t *testing.T) {
 	dir := t.TempDir()
-	tc := testutil.NewTestClient()
+	tc := testutil.NewTestClient(t)
 	tc.HTTP.AddRaw(200, []byte("X"))
 
 	out := api2convert.OutputFileOf("", "https://dl/x", "") // no filename, no id
@@ -70,7 +70,7 @@ func TestSaveFallsBackToOutputWhenNameUnusable(t *testing.T) {
 
 func TestSaveUsesExplicitFilePathVerbatim(t *testing.T) {
 	dir := t.TempDir()
-	tc := testutil.NewTestClient()
+	tc := testutil.NewTestClient(t)
 	tc.HTTP.AddRaw(200, []byte("X"))
 
 	target := filepath.Join(dir, "sub", "out.png") // parent must be created
@@ -91,7 +91,7 @@ func TestSaveMakesNoRequestWhenDirCannotBeCreated(t *testing.T) {
 	if err := os.WriteFile(blocker, []byte("x"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	tc := testutil.NewTestClient()
+	tc := testutil.NewTestClient(t)
 
 	out := api2convert.OutputFileOf("", "https://dl/x", "out.png")
 	_, err := tc.Client.Download(out).Save(context.Background(), filepath.Join(blocker, "out.png"))
@@ -104,7 +104,7 @@ func TestSaveMakesNoRequestWhenDirCannotBeCreated(t *testing.T) {
 }
 
 func TestContentsLoadsIntoMemory(t *testing.T) {
-	tc := testutil.NewTestClient()
+	tc := testutil.NewTestClient(t)
 	tc.HTTP.AddRaw(200, []byte("HELLO"))
 
 	out := api2convert.OutputFileOf("", "https://dl/x", "f")
@@ -118,7 +118,7 @@ func TestContentsLoadsIntoMemory(t *testing.T) {
 }
 
 func TestDownloadWithPasswordSendsHeaderAndDoesNotFollowRedirects(t *testing.T) {
-	tc := testutil.NewTestClient()
+	tc := testutil.NewTestClient(t)
 	tc.HTTP.AddRaw(200, []byte("SECRETBYTES"))
 
 	out := api2convert.OutputFileOf("", "https://dl/x", "f")
@@ -137,7 +137,7 @@ func TestDownloadWithPasswordSendsHeaderAndDoesNotFollowRedirects(t *testing.T) 
 func TestSaveRemovesPartialFileOnCopyError(t *testing.T) {
 	dir := t.TempDir()
 	// A tiny download cap makes io.Copy fail partway through streaming the body.
-	tc := testutil.NewTestClient(api2convert.WithMaxDownloadBytes(4))
+	tc := testutil.NewTestClient(t, api2convert.WithMaxDownloadBytes(4))
 	tc.HTTP.AddRaw(200, []byte("way too many bytes to fit under the cap"))
 
 	target := filepath.Join(dir, "out.bin")
@@ -152,7 +152,7 @@ func TestSaveRemovesPartialFileOnCopyError(t *testing.T) {
 }
 
 func TestMaxDownloadBytesRejectsOversizedBody(t *testing.T) {
-	tc := testutil.NewTestClient(api2convert.WithMaxDownloadBytes(4))
+	tc := testutil.NewTestClient(t, api2convert.WithMaxDownloadBytes(4))
 	tc.HTTP.AddRaw(200, []byte("way too many bytes"))
 
 	out := api2convert.OutputFileOf("", "https://dl/x", "f")

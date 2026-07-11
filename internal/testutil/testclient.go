@@ -3,6 +3,7 @@ package testutil
 import (
 	"context"
 	"sync"
+	"testing"
 	"time"
 
 	api2convert "github.com/QaamGo/api2convert-go/v10"
@@ -15,8 +16,13 @@ type Sleeper struct {
 	durations []time.Duration
 }
 
-// Sleep records d and returns immediately.
-func (s *Sleeper) Sleep(_ context.Context, d time.Duration) error {
+// Sleep records d and returns immediately — but honors ctx cancellation first, so
+// a canceled context surfaces during a backoff/poll wait exactly as the real
+// timer-based sleeper would.
+func (s *Sleeper) Sleep(ctx context.Context, d time.Duration) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	s.mu.Lock()
 	s.durations = append(s.durations, d)
 	s.mu.Unlock()
@@ -42,10 +48,12 @@ type TestClient struct {
 
 // NewTestClient builds a TestClient with the API key "test-key". Additional
 // options are appended after the injected seams, so a caller may override, for
-// example, maxRetries. It panics only on an impossible construction error (the
+// example, maxRetries. The FakeSender is wired to t so a missing fixture fails
+// the test immediately. It panics only on an impossible construction error (the
 // non-empty key guarantees success).
-func NewTestClient(opts ...api2convert.Option) *TestClient {
-	http := &FakeSender{}
+func NewTestClient(t *testing.T, opts ...api2convert.Option) *TestClient {
+	t.Helper()
+	http := (&FakeSender{}).Fail(t)
 	sleeper := &Sleeper{}
 	base := []api2convert.Option{
 		api2convert.WithHTTPSender(http),

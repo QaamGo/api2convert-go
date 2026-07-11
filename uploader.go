@@ -47,6 +47,7 @@ func (u *fileUploader) upload(ctx context.Context, job Job, file any, filename .
 		FollowRedirects: false,
 		Replayable:      replayable,
 		Timeout:         u.transport.config.timeout,
+		Stream:          true,
 	}
 
 	resp, err := u.transport.send(ctx, req)
@@ -118,6 +119,11 @@ func filenameOr(filename []string, dflt string) string {
 func streamedMultipart(boundary, filename string, src io.Reader) io.Reader {
 	pr, pw := io.Pipe()
 	go func() {
+		// Close src on every exit path. CreatePart writes to the unbuffered pipe and
+		// fails whenever the HTTP layer aborts before consuming the body (connection
+		// refused, DNS failure); without this defer a file-path input would leak an
+		// open file descriptor on each such early failure.
+		defer closeIfCloser(src)
 		mw := multipart.NewWriter(pw)
 		if err := mw.SetBoundary(boundary); err != nil {
 			_ = pw.CloseWithError(err)
@@ -133,11 +139,9 @@ func streamedMultipart(boundary, filename string, src io.Reader) io.Reader {
 			return
 		}
 		if _, err := io.Copy(part, src); err != nil {
-			closeIfCloser(src)
 			_ = pw.CloseWithError(err)
 			return
 		}
-		closeIfCloser(src)
 		if err := mw.Close(); err != nil {
 			_ = pw.CloseWithError(err)
 			return

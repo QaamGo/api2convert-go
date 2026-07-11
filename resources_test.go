@@ -9,7 +9,7 @@ import (
 )
 
 func TestJobsListUpdateCancelAddInputOutputs(t *testing.T) {
-	tc := testutil.NewTestClient()
+	tc := testutil.NewTestClient(t)
 	tc.HTTP.
 		AddJSON(200, []any{
 			map[string]any{"id": "j1", "status": map[string]any{"code": "completed"}},
@@ -56,7 +56,7 @@ func TestJobsListUpdateCancelAddInputOutputs(t *testing.T) {
 }
 
 func TestConversionsListAndOptions(t *testing.T) {
-	tc := testutil.NewTestClient()
+	tc := testutil.NewTestClient(t)
 	tc.HTTP.
 		AddJSON(200, []any{map[string]any{"id": "c1", "category": "image", "target": "png", "options": map[string]any{"quality": map[string]any{"type": "integer"}}}}).
 		AddJSON(200, []any{map[string]any{"target": "png", "options": map[string]any{"width": map[string]any{"type": "integer"}}}})
@@ -77,7 +77,7 @@ func TestConversionsListAndOptions(t *testing.T) {
 }
 
 func TestPresetsCRUD(t *testing.T) {
-	tc := testutil.NewTestClient()
+	tc := testutil.NewTestClient(t)
 	tc.HTTP.
 		AddJSON(200, []any{map[string]any{"id": "p1", "name": "web", "target": "jpg"}}).
 		AddJSON(201, map[string]any{"id": "p2", "name": "print", "target": "pdf"}).
@@ -111,7 +111,7 @@ func TestPresetsCRUD(t *testing.T) {
 }
 
 func TestStatsAndContracts(t *testing.T) {
-	tc := testutil.NewTestClient()
+	tc := testutil.NewTestClient(t)
 	tc.HTTP.
 		AddJSON(200, map[string]any{"conversions": 10}).
 		AddJSON(200, map[string]any{"conversions": 300}).
@@ -143,7 +143,7 @@ func TestStatsAndContracts(t *testing.T) {
 }
 
 func TestPathSegmentsAreEncoded(t *testing.T) {
-	tc := testutil.NewTestClient()
+	tc := testutil.NewTestClient(t)
 	tc.HTTP.
 		AddJSON(200, map[string]any{"id": "j1"}).
 		AddJSON(200, map[string]any{"id": "p1"}).

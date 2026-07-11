@@ -11,7 +11,7 @@ import (
 )
 
 func TestWaitPollsUntilCompleted(t *testing.T) {
-	tc := testutil.NewTestClient()
+	tc := testutil.NewTestClient(t)
 	tc.HTTP.
 		AddJSON(200, map[string]any{"id": "j", "status": map[string]any{"code": "processing"}}).
 		AddJSON(200, map[string]any{"id": "j", "status": map[string]any{"code": "processing"}}).
@@ -36,7 +36,7 @@ func TestWaitPollsUntilCompleted(t *testing.T) {
 }
 
 func TestWaitReturnsConversionFailedError(t *testing.T) {
-	tc := testutil.NewTestClient()
+	tc := testutil.NewTestClient(t)
 	tc.HTTP.AddJSON(200, map[string]any{
 		"id":     "j",
 		"status": map[string]any{"code": "failed"},
@@ -54,7 +54,7 @@ func TestWaitReturnsConversionFailedError(t *testing.T) {
 }
 
 func TestWaitThrowOnFailureFalseReturnsJob(t *testing.T) {
-	tc := testutil.NewTestClient()
+	tc := testutil.NewTestClient(t)
 	tc.HTTP.AddJSON(200, map[string]any{"id": "j", "status": map[string]any{"code": "failed"}})
 
 	job, err := tc.Client.Jobs().Wait(context.Background(), "j", 0, false)
@@ -67,7 +67,7 @@ func TestWaitThrowOnFailureFalseReturnsJob(t *testing.T) {
 }
 
 func TestWaitTimesOut(t *testing.T) {
-	tc := testutil.NewTestClient()
+	tc := testutil.NewTestClient(t)
 	tc.HTTP.AddJSON(200, map[string]any{"id": "j", "status": map[string]any{"code": "processing"}})
 
 	_, err := tc.Client.Jobs().Wait(context.Background(), "j", time.Nanosecond, true)

@@ -47,7 +47,9 @@ func main() {
 // body so the HMAC-SHA256 signature check is byte-exact.
 func handleWebhook(w http.ResponseWriter, r *http.Request) {
 	secret := os.Getenv("API2CONVERT_WEBHOOK_SECRET") // empty secret skips verification
-	body, err := io.ReadAll(r.Body)
+	// Bound the read: a webhook body is small, and an unbounded ReadAll on an
+	// attacker-controlled request is a memory-exhaustion vector.
+	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 1<<20))
 	if err != nil {
 		http.Error(w, "cannot read body", http.StatusBadRequest)
 		return
