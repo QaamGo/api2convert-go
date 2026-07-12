@@ -130,6 +130,36 @@ job := event.Job
 `api2convert.Webhooks()` needs no configured client. Pass an empty secret to skip verification, or
 use `Parse` for accounts without signed webhooks enabled.
 
+## Cloud storage
+
+Read an input straight from your own cloud storage, and/or deliver the output into a bucket (S3,
+Azure, FTP, Google Cloud — shipped in 10.3.0). Credentials ride in the request body only: they are
+masked to `[REDACTED]` in `String()` and never appear in an error or a log line.
+
+```go
+// Input from S3 — a per-provider constructor carries the exact keys the API
+// expects (flat, lowercase). The result downloads locally as usual.
+res, err := client.Convert(ctx,
+	api2convert.CloudInputAmazonS3("my-bucket", "in/photo.png", "AKIA…", "…"), "jpg")
+res.Save(ctx, "photo.jpg")
+
+// Output to S3 — attach a generic OutputTarget. When any target is set the
+// conversion delivers straight to your storage and produces no local output, so
+// Convert returns the completed job without downloading.
+res, err = client.Convert(ctx, "photo.png", "jpg",
+	api2convert.WithOutputTarget(api2convert.OutputTargetOf(
+		api2convert.CloudProviderAmazonS3,
+		map[string]any{"bucket": "my-bucket", "file": "out/photo.jpg"},
+		map[string]any{"accesskeyid": "AKIA…", "secretaccesskey": "…"},
+	)))
+delivered := res.Job.Conversion[0].OutputTargets[0].Status // waiting|uploading|completed|failed
+_ = delivered
+```
+
+Azure, FTP and Google Cloud have matching input constructors (`CloudInputAzure`, `CloudInputFTP`,
+`CloudInputGoogleCloud`); output always uses the generic `OutputTargetOf`. Pass several targets at
+once with `WithOutputTargets`.
+
 ## Full lifecycle control
 
 `Convert` is built on the resources, which you can use directly for compound jobs, presets, custom
