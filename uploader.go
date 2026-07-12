@@ -36,8 +36,8 @@ func (u *fileUploader) upload(ctx context.Context, job Job, file any, filename .
 	}
 
 	headers := map[string]string{
-		"X-Api2convert-Token":   job.Token,
-		"Content-Type": contentType,
+		"X-Api2convert-Token": job.Token,
+		"Content-Type":        contentType,
 	}
 	req := &Request{
 		Method:          "POST",
