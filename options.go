@@ -128,6 +128,7 @@ type convertParams struct {
 	downloadPassword *string
 	outputIndex      int
 	timeout          *time.Duration
+	outputTargets    []OutputTarget
 }
 
 func newConvertParams(opts []ConvertOption) *convertParams {
@@ -169,4 +170,19 @@ func WithOutputIndex(i int) ConvertOption { return func(p *convertParams) { p.ou
 // Convert only (which waits); ConvertAsync does not poll and ignores it.
 func WithConvertTimeout(d time.Duration) ConvertOption {
 	return func(p *convertParams) { p.timeout = &d }
+}
+
+// WithOutputTarget attaches a cloud delivery target to the conversion's
+// output_target (never merged into the conversion options map). Repeatable —
+// each call appends. When any output target is set the conversion delivers to
+// your storage and produces no local output, so Convert returns the completed
+// job without downloading.
+func WithOutputTarget(target OutputTarget) ConvertOption {
+	return func(p *convertParams) { p.outputTargets = append(p.outputTargets, target) }
+}
+
+// WithOutputTargets attaches several cloud delivery targets at once (see
+// WithOutputTarget). Appends to any already set.
+func WithOutputTargets(targets ...OutputTarget) ConvertOption {
+	return func(p *convertParams) { p.outputTargets = append(p.outputTargets, targets...) }
 }

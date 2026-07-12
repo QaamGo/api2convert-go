@@ -155,6 +155,16 @@ func (c *Client) startConversion(ctx context.Context, input any, to string, p *c
 	if len(p.options) > 0 {
 		conversion["options"] = p.options
 	}
+	if len(p.outputTargets) > 0 {
+		// Cloud delivery targets attach to the conversion's output_target and are
+		// never merged into the options map, so open-ended API option keys can't
+		// collide with them.
+		targets := make([]any, 0, len(p.outputTargets))
+		for _, t := range p.outputTargets {
+			targets = append(targets, t.Descriptor())
+		}
+		conversion["output_target"] = targets
+	}
 
 	payload := map[string]any{"conversion": []any{conversion}}
 	if isAsync && p.callback != nil {
@@ -163,6 +173,15 @@ func (c *Client) startConversion(ctx context.Context, input any, to string, p *c
 	}
 	if p.downloadPassword != nil {
 		payload["download_passwords"] = []any{*p.downloadPassword}
+	}
+
+	// A cloud input imports the source straight from customer storage — a started
+	// job with the descriptor inline, exactly like a remote URL (never staged /
+	// uploaded).
+	if ci, ok := input.(CloudInput); ok {
+		payload["process"] = true
+		payload["input"] = []any{ci.Descriptor()}
+		return c.jobs.Create(ctx, payload)
 	}
 
 	if s, ok := input.(string); ok && urlRE.MatchString(s) {

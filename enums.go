@@ -43,3 +43,29 @@ const (
 	InputTypeBase64       InputType = "base64"
 	InputTypeCloud        InputType = "cloud"
 )
+
+// CloudProvider is the vocabulary of cloud storage providers the API can import
+// inputs from and deliver outputs to — the value of a cloud descriptor's "source"
+// (input) or "type" (output) field.
+//
+// It is build-side vocabulary only: it types the CloudInput builder and
+// OutputTarget serialization. Read models keep source/type/status as raw strings,
+// so an unknown provider string returned by the server round-trips untyped and
+// never fails to hydrate. Pass a CloudProvider("...") conversion for a
+// forward-compat provider the constants do not yet name.
+//
+// Import support (a CloudInput constructor) exists for CloudProviderAmazonS3,
+// CloudProviderAzure, CloudProviderFtp and CloudProviderGoogleCloud.
+// CloudProviderGdrive and CloudProviderYoutube are output-only (they validate as
+// an output type but have no downloader); Google Drive input uses the separate
+// gdrive_picker input type via the raw AddInput path.
+type CloudProvider string
+
+const (
+	CloudProviderAmazonS3    CloudProvider = "amazons3"
+	CloudProviderAzure       CloudProvider = "azure"
+	CloudProviderFtp         CloudProvider = "ftp"
+	CloudProviderGdrive      CloudProvider = "gdrive"
+	CloudProviderGoogleCloud CloudProvider = "googlecloud"
+	CloudProviderYoutube     CloudProvider = "youtube"
+)

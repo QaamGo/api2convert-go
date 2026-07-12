@@ -183,7 +183,12 @@ func (t *transport) ensureSuccessful(resp *Response) error {
 	if status < 400 {
 		return nil
 	}
-	body := decodeSafe(resp)
+	// Belt-and-suspenders: deep-redact the decoded error body before it lands on
+	// the typed error. Cloud credentials ride in the plaintext request body; the
+	// API only ever echoes field names, never a credential value, but a future
+	// server/proxy change must not be able to surface a secret through Body(). The
+	// message is server-provided text and is never derived from the request body.
+	body := redactBody(decodeSafe(resp))
 	message := "Request failed"
 	if m, ok := body["message"].(string); ok && m != "" {
 		message = m
@@ -255,7 +260,7 @@ func (t *transport) redact(s string) string {
 	if t.config.apiKey == "" {
 		return s
 	}
-	return strings.ReplaceAll(s, t.config.apiKey, "[REDACTED]")
+	return strings.ReplaceAll(s, t.config.apiKey, redactionMarker)
 }
 
 func (t *transport) url(path string, query url.Values) string {

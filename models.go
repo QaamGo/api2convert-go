@@ -15,26 +15,36 @@ func StatusFromMap(data map[string]any) Status {
 }
 
 // Conversion is a single conversion within a job: the target format plus options.
+//
+// OutputTargets holds any cloud delivery targets attached to this conversion's
+// output (empty for an ordinary downloadable conversion).
 type Conversion struct {
-	Target   string
-	ID       string
-	Category string
-	Options  map[string]any
-	Metadata map[string]any
+	Target        string
+	ID            string
+	Category      string
+	Options       map[string]any
+	Metadata      map[string]any
+	OutputTargets []OutputTarget
 }
 
 // ConversionFromMap hydrates a Conversion from a decoded JSON object.
 func ConversionFromMap(data map[string]any) Conversion {
 	return Conversion{
-		Target:   asString(data["target"], ""),
-		ID:       asString(data["id"], ""),
-		Category: asString(data["category"], ""),
-		Options:  asObject(data["options"]),
-		Metadata: asObject(data["metadata"]),
+		Target:        asString(data["target"], ""),
+		ID:            asString(data["id"], ""),
+		Category:      asString(data["category"], ""),
+		Options:       asObject(data["options"]),
+		Metadata:      asObject(data["metadata"]),
+		OutputTargets: mapObjects(data["output_target"], OutputTargetFromMap),
 	}
 }
 
 // InputFile is an input file attached to a job.
+//
+// Parameters surfaces a cloud input's non-secret locator keys (bucket, file,
+// host, …); it is empty for ordinary uploaded/remote inputs. Source and Status
+// stay raw strings (an unknown cloud provider round-trips untyped). Cloud
+// credentials are never surfaced (the API returns them empty).
 type InputFile struct {
 	ID          string
 	Type        string
@@ -44,6 +54,7 @@ type InputFile struct {
 	Size        *int64
 	ContentType string
 	Options     map[string]any
+	Parameters  map[string]any
 }
 
 // InputFileFromMap hydrates an InputFile from a decoded JSON object.
@@ -57,6 +68,7 @@ func InputFileFromMap(data map[string]any) InputFile {
 		Size:        nullableInt64(data["size"]),
 		ContentType: asString(data["content_type"], ""),
 		Options:     asObject(data["options"]),
+		Parameters:  asObject(data["parameters"]),
 	}
 }
 
