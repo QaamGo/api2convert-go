@@ -13,7 +13,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-go@v7
         with:
           go-version: "stable"
@@ -44,7 +44,7 @@ jobs:
         # track the two currently-supported releases so the matrix never goes EOL.
         go: ["1.22", "oldstable", "stable"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-go@v7
         with:
           go-version: ${{ matrix.go }}
@@ -61,7 +61,7 @@ jobs:
     # reach consumers here. govulncheck reports only what our code actually calls.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-go@v7
         with:
           go-version: "stable"
@@ -77,7 +77,7 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true # allow_failure equivalent
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-go@v7
         with:
           go-version: "stable"
