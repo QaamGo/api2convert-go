@@ -130,7 +130,9 @@ func PresetFromMap(data map[string]any) Preset {
 // JobMessage is an error or warning attached to a job (the errors[] / warnings[]
 // entries).
 type JobMessage struct {
-	Code     *int
+	// Code is int64 to match the wire type: nullableInt64 already decodes past 2^53,
+	// and narrowing to int truncated on 32-bit builds for no benefit.
+	Code     *int64
 	Message  string
 	Source   string
 	IDSource string
@@ -139,11 +141,7 @@ type JobMessage struct {
 
 // JobMessageFromMap hydrates a JobMessage from a decoded JSON object.
 func JobMessageFromMap(data map[string]any) JobMessage {
-	var code *int
-	if n := nullableInt64(data["code"]); n != nil {
-		c := int(*n)
-		code = &c
-	}
+	code := nullableInt64(data["code"])
 	return JobMessage{
 		Code:     code,
 		Message:  asString(data["message"], ""),
