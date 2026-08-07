@@ -55,6 +55,21 @@ jobs:
       - name: Security suite (explicit, in isolation)
         run: go test -race ./security/...
 
+  vulncheck:
+    # The SDK has zero third-party dependencies, so this is really a toolchain gate: a Go
+    # stdlib advisory (crypto/tls, net/http, archive/*) is the only way a vulnerability can
+    # reach consumers here. govulncheck reports only what our code actually calls.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "stable"
+          check-latest: true # newest patch release, so stdlib security fixes are seen
+          cache: true
+      - run: go install golang.org/x/vuln/cmd/govulncheck@latest
+      - run: govulncheck ./...
+
   live:
     # Live tests hit the real (production) API and consume quota: only on master or
     # a manual dispatch, and only when the key secret is present.
