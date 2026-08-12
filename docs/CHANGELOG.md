@@ -3,7 +3,28 @@
 All notable changes to the API2Convert Go SDK are documented here. The version is kept in lockstep
 with the PHP/Python/Java/Node.js SDKs.
 
-## [Unreleased]
+## [10.4.0] - 2026-08-12
+
+### Changed
+
+- **`JobMessage.Code` is now `*int64` (was `*int`).** The wire decoder (`nullableInt64`) already
+  reads values past 2³¹, so the old narrowing conversion truncated on 32-bit builds. Code that
+  formats the field (`%d`) or stores it in an `any` is unaffected; code that assigns it to an
+  `*int` variable needs the type updated.
+
+## [10.3.1] - 2026-07-12
+
+- Ships the cloud-storage examples added to the README (READMEs are included in the module zip).
+  No functional or API change from 10.3.0.
+
+## [10.3.0] - 2026-07-12
+
+### Added
+
+- Cloud-storage connectors: typed `CloudInput` + `OutputTarget` (SDK contract D-5).
+- On-brand `x-api2convert-*` request headers.
+
+### Fixed
 
 Fixes from an in-depth code review (behavior/robustness; no public API breaks):
 
