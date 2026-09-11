@@ -71,9 +71,9 @@ jobs:
       - run: govulncheck ./...
 
   live:
-    # Live tests hit the real (production) API and consume quota: only on master or
+    # Live tests hit the real (production) API and consume quota: only on main or
     # a manual dispatch, and only when the key secret is present.
-    if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master' }}
+    if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     continue-on-error: true # allow_failure equivalent
     steps:
