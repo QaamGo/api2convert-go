@@ -45,8 +45,8 @@ func TestCloudInputRenderingMasksCredentials(t *testing.T) {
 
 func TestOutputTargetRenderingMasksCredentials(t *testing.T) {
 	rendered := api2convert.OutputTargetOf(
-		api2convert.CloudProviderFtp,
-		map[string]any{"host": "ftp.example.com"},
+		api2convert.CloudProviderAzure,
+		map[string]any{"container": "out-container"},
 		map[string]any{"username": "u", "password": cloudSecret},
 	).String()
 

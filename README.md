@@ -133,7 +133,7 @@ use `Parse` for accounts without signed webhooks enabled.
 ## Cloud storage
 
 Read an input straight from your own cloud storage, and/or deliver the output into a bucket (S3,
-Azure, FTP, Google Cloud — shipped in 10.3.0). Credentials ride in the request body only: they are
+Azure, Google Cloud — shipped in 10.3.0). Credentials ride in the request body only: they are
 masked to `[REDACTED]` in `String()` and never appear in an error or a log line.
 
 ```go
@@ -156,7 +156,7 @@ delivered := res.Job.Conversion[0].OutputTargets[0].Status // waiting|uploading|
 _ = delivered
 ```
 
-Azure, FTP and Google Cloud have matching input constructors (`CloudInputAzure`, `CloudInputFTP`,
+Azure and Google Cloud have matching input constructors (`CloudInputAzure`,
 `CloudInputGoogleCloud`); output always uses the generic `OutputTargetOf`. Pass several targets at
 once with `WithOutputTargets`.
 

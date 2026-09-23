@@ -55,15 +55,6 @@ func CloudInputAzure(container, file, accountname, accountkey string) CloudInput
 	}
 }
 
-// CloudInputFTP imports from an FTP server.
-func CloudInputFTP(host, file, username, password string) CloudInput {
-	return CloudInput{
-		Source:      string(CloudProviderFtp),
-		Parameters:  map[string]any{"host": host, "file": file},
-		Credentials: map[string]any{"username": username, "password": password},
-	}
-}
-
 // CloudInputGoogleCloud imports from Google Cloud Storage.
 func CloudInputGoogleCloud(projectid, bucket, file, keyfile string) CloudInput {
 	return CloudInput{

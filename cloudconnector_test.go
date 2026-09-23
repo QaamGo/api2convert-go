@@ -25,9 +25,9 @@ func TestFixture1ConvertSerializesCloudInputAndOutputTarget(t *testing.T) {
 
 	input := api2convert.CloudInputAmazonS3("my-bucket", "in/photo.png", "AKIA_TEST", "SECRET_TEST")
 	target := api2convert.OutputTargetOf(
-		api2convert.CloudProviderFtp,
-		map[string]any{"host": "ftp.example.com", "file": "/out/photo.jpg"},
-		map[string]any{"username": "u", "password": "p"},
+		api2convert.CloudProviderAzure,
+		map[string]any{"container": "out-container", "file": "/out/photo.jpg"},
+		map[string]any{"accountname": "n", "accountkey": "k"},
 	)
 
 	if _, err := tc.Client.Convert(context.Background(), input, "jpg",
@@ -61,9 +61,9 @@ func TestFixture1ConvertSerializesCloudInputAndOutputTarget(t *testing.T) {
 
 	// 3) output_target[0] serializes {type,parameters,credentials} and NO status.
 	wantTarget := map[string]any{
-		"type":        "ftp",
-		"parameters":  map[string]any{"host": "ftp.example.com", "file": "/out/photo.jpg"},
-		"credentials": map[string]any{"username": "u", "password": "p"},
+		"type":        "azure",
+		"parameters":  map[string]any{"container": "out-container", "file": "/out/photo.jpg"},
+		"credentials": map[string]any{"accountname": "n", "accountkey": "k"},
 	}
 	gotTargets := conv["output_target"].([]any)
 	if len(gotTargets) != 1 || !reflect.DeepEqual(gotTargets[0], wantTarget) {
@@ -85,9 +85,9 @@ func TestFixture1RawCreatePathProducesByteIdenticalOutputTarget(t *testing.T) {
 
 	in := api2convert.CloudInputAmazonS3("my-bucket", "in/photo.png", "AKIA_TEST", "SECRET_TEST")
 	target := api2convert.OutputTargetOf(
-		api2convert.CloudProviderFtp,
-		map[string]any{"host": "ftp.example.com", "file": "/out/photo.jpg"},
-		map[string]any{"username": "u", "password": "p"},
+		api2convert.CloudProviderAzure,
+		map[string]any{"container": "out-container", "file": "/out/photo.jpg"},
+		map[string]any{"accountname": "n", "accountkey": "k"},
 	)
 	_, err := tc.Client.Jobs().Create(context.Background(), map[string]any{
 		"process": true,
@@ -112,9 +112,9 @@ func TestFixture1RawCreatePathProducesByteIdenticalOutputTarget(t *testing.T) {
 		"credentials": map[string]any{"accesskeyid": "AKIA_TEST", "secretaccesskey": "SECRET_TEST"},
 	}
 	wantTarget := map[string]any{
-		"type":        "ftp",
-		"parameters":  map[string]any{"host": "ftp.example.com", "file": "/out/photo.jpg"},
-		"credentials": map[string]any{"username": "u", "password": "p"},
+		"type":        "azure",
+		"parameters":  map[string]any{"container": "out-container", "file": "/out/photo.jpg"},
+		"credentials": map[string]any{"accountname": "n", "accountkey": "k"},
 	}
 	// Both the convert() outputTargets control and the raw create map yield the same bytes.
 	if got := body["input"].([]any); !reflect.DeepEqual(got[0], wantInput) {
@@ -128,9 +128,9 @@ func TestFixture1RawCreatePathProducesByteIdenticalOutputTarget(t *testing.T) {
 
 func TestAddInputAcceptsCloudInputDescriptor(t *testing.T) {
 	tc := testutil.NewTestClient(t)
-	tc.HTTP.AddJSON(200, map[string]any{"id": "in-1", "type": "cloud", "source": "ftp"})
+	tc.HTTP.AddJSON(200, map[string]any{"id": "in-1", "type": "cloud", "source": "azure"})
 
-	in := api2convert.CloudInputFTP("ftp.example.com", "in/a.png", "u", "p")
+	in := api2convert.CloudInputAzure("in-container", "in/a.png", "n", "k")
 	if _, err := tc.Client.Jobs().AddInput(context.Background(), "job-1", in.Descriptor()); err != nil {
 		t.Fatal(err)
 	}
@@ -139,13 +139,13 @@ func TestAddInputAcceptsCloudInputDescriptor(t *testing.T) {
 	if err := tc.HTTP.At(0).JSON(&body); err != nil {
 		t.Fatal(err)
 	}
-	if body["type"] != "cloud" || body["source"] != "ftp" {
+	if body["type"] != "cloud" || body["source"] != "azure" {
 		t.Fatalf("descriptor type/source = %v/%v", body["type"], body["source"])
 	}
-	if !reflect.DeepEqual(body["parameters"], map[string]any{"host": "ftp.example.com", "file": "in/a.png"}) {
+	if !reflect.DeepEqual(body["parameters"], map[string]any{"container": "in-container", "file": "in/a.png"}) {
 		t.Fatalf("parameters = %#v", body["parameters"])
 	}
-	if !reflect.DeepEqual(body["credentials"], map[string]any{"username": "u", "password": "p"}) {
+	if !reflect.DeepEqual(body["credentials"], map[string]any{"accountname": "n", "accountkey": "k"}) {
 		t.Fatalf("credentials = %#v", body["credentials"])
 	}
 }
@@ -168,8 +168,8 @@ func TestFixture2HydratesCloudInputAndOutputTarget(t *testing.T) {
 			"id":     "c-1",
 			"target": "jpg",
 			"output_target": []any{map[string]any{
-				"type":        "ftp",
-				"parameters":  map[string]any{"host": "ftp.example.com", "file": "/out/photo.jpg"},
+				"type":        "azure",
+				"parameters":  map[string]any{"container": "out-container", "file": "/out/photo.jpg"},
 				"credentials": map[string]any{},
 				"status":      "uploading",
 			}},
@@ -190,10 +190,10 @@ func TestFixture2HydratesCloudInputAndOutputTarget(t *testing.T) {
 		t.Fatalf("expected one output target, got %#v", job.Conversion)
 	}
 	out := job.Conversion[0].OutputTargets[0]
-	if out.Type != "ftp" || out.Status != "uploading" {
+	if out.Type != "azure" || out.Status != "uploading" {
 		t.Fatalf("output target type/status = %q/%q", out.Type, out.Status)
 	}
-	if !reflect.DeepEqual(out.Parameters, map[string]any{"host": "ftp.example.com", "file": "/out/photo.jpg"}) {
+	if !reflect.DeepEqual(out.Parameters, map[string]any{"container": "out-container", "file": "/out/photo.jpg"}) {
 		t.Fatalf("output target parameters = %#v", out.Parameters)
 	}
 
@@ -264,11 +264,27 @@ func TestGenericEscapeHatchCarriesForwardCompatKeys(t *testing.T) {
 	}
 }
 
+func TestRetiredFtpProviderStillHydratesFromHistoricalJobs(t *testing.T) {
+	// `ftp` is no longer build-side vocabulary, but the API still returns it on jobs created
+	// before it was retired. Reads stay raw strings so those jobs never fail to hydrate.
+	out := api2convert.OutputTargetFromMap(map[string]any{
+		"type":       "ftp",
+		"parameters": map[string]any{"host": "h"},
+		"status":     "completed",
+	})
+	if out.Type != "ftp" || out.Status != "completed" {
+		t.Fatalf("retired provider hydration = %q/%q", out.Type, out.Status)
+	}
+	if got := api2convert.CloudInputOf(api2convert.CloudProvider("ftp"), nil, nil).Source; got != "ftp" {
+		t.Fatalf("retired provider as forward-compat source = %q", got)
+	}
+}
+
 func TestOutputTargetOmitsStatusOnSerializeButHydratesItOnRead(t *testing.T) {
 	created := api2convert.OutputTarget{
-		Type:        "ftp",
-		Parameters:  map[string]any{"host": "h"},
-		Credentials: map[string]any{"username": "u"},
+		Type:        "azure",
+		Parameters:  map[string]any{"container": "c"},
+		Credentials: map[string]any{"accountkey": "k"},
 		Status:      "completed",
 	}
 	if _, has := created.Descriptor()["status"]; has {
@@ -276,8 +292,8 @@ func TestOutputTargetOmitsStatusOnSerializeButHydratesItOnRead(t *testing.T) {
 	}
 
 	read := api2convert.OutputTargetFromMap(map[string]any{
-		"type":       "ftp",
-		"parameters": map[string]any{"host": "h"},
+		"type":       "azure",
+		"parameters": map[string]any{"container": "c"},
 		"status":     "completed",
 	})
 	if read.Status != "completed" {

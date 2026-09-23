@@ -55,7 +55,7 @@ const (
 // forward-compat provider the constants do not yet name.
 //
 // Import support (a CloudInput constructor) exists for CloudProviderAmazonS3,
-// CloudProviderAzure, CloudProviderFtp and CloudProviderGoogleCloud.
+// CloudProviderAzure and CloudProviderGoogleCloud.
 // CloudProviderGdrive and CloudProviderYoutube are output-only (they validate as
 // an output type but have no downloader); Google Drive input uses the separate
 // gdrive_picker input type via the raw AddInput path.
@@ -64,7 +64,6 @@ type CloudProvider string
 const (
 	CloudProviderAmazonS3    CloudProvider = "amazons3"
 	CloudProviderAzure       CloudProvider = "azure"
-	CloudProviderFtp         CloudProvider = "ftp"
 	CloudProviderGdrive      CloudProvider = "gdrive"
 	CloudProviderGoogleCloud CloudProvider = "googlecloud"
 	CloudProviderYoutube     CloudProvider = "youtube"
