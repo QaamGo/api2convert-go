@@ -4,6 +4,10 @@ on:
   push:
     branches: [master, main]
   pull_request:
+  # Weekly, so a new advisory turns the audit red without a push. GitHub switches scheduled runs off
+  # after 60 days without a commit in a public repository.
+  schedule:
+    - cron: '7 5 * * 1'
   workflow_dispatch: # enables the manual live-run path the `live` job gates on
 
 permissions:
@@ -73,7 +77,7 @@ jobs:
   live:
     # Live tests hit the real (production) API and consume quota: only on main or
     # a manual dispatch, and only when the key secret is present.
-    if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' }}
+    if: ${{ github.event_name != 'schedule' && (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main') }}
     runs-on: ubuntu-latest
     continue-on-error: true # allow_failure equivalent
     steps:
