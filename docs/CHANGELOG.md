@@ -3,6 +3,13 @@
 All notable changes to the API2Convert Go SDK are documented here. The version is kept in lockstep
 with the PHP/Python/Java/Node.js SDKs.
 
+## [10.4.1] - 2026-11-06
+
+### Removed
+
+- The FTP cloud provider, because FTP is being retired from the API: `CloudInputFTP()` and
+  `CloudProviderFtp`. Code that uses them no longer compiles and needs another provider. Reading stays tolerant: jobs created with `ftp` earlier still load.
+
 ## [10.4.0] - 2026-08-12
 
 ### Changed
